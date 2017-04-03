@@ -30,15 +30,15 @@ open class Gleichung(val left: Expression, val right: Expression) {
     if (variableCount()[varName]?.get() ?: 0 > 1) return NotSolvableGleichung(varName, "Die Variable kommt mehrfach vor!")
 
     // ***** bring var to left --- make deep copy
-    var left = (if (this.left.containsVariable(varName)) this.left else this.right).copy()
-    var right = (if (this.left.containsVariable(varName)) this.right else this.left).copy()
+    var tmpLeft = (if (this.left.containsVariable(varName)) this.left else this.right).copy()
+    var tmpRight = (if (this.left.containsVariable(varName)) this.right else this.left).copy()
 
-    while (left !is VariableExpression) {
-      val (newLeft, newRight) = left.shiftOver(varName, right)
-      left = newLeft
-      right = newRight
+    while (tmpLeft !is VariableExpression) {
+      val (newLeft, newRight) = tmpLeft.shiftOver(varName, tmpRight)
+      tmpLeft = newLeft
+      tmpRight = newRight
     }
 
-    return Gleichung(left, right)
+    return Gleichung(tmpLeft, tmpRight)
   }
 }

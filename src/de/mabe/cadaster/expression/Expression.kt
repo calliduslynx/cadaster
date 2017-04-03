@@ -123,7 +123,7 @@ class ValueExpression(val value: Double) : Expression("VALUE: $value") {
   override fun toString() = value.toString()
   override fun children() = emptyList<Expression>()
   override fun newInstance(children: List<Expression>) = ValueExpression(value)
-  override fun shiftOver(varName: String, right: Expression) = TODO()
+  override fun shiftOver(varName: String, right: Expression) = throw VariableNotFoundException(varName)
 }
 
 // ***********************************************************************************************
