@@ -1,9 +1,9 @@
 package de.mabe.cadaster.expression
 
-import com.sun.javafx.fxml.expression.VariableExpression
+import java.util.concurrent.atomic.AtomicInteger
 
 
-internal fun String.braced() = " ( $this ) "
+internal fun String.braced() = "( $this )"
 
 // ***********************************************************************************************
 // ***********************************************************************************************
@@ -12,30 +12,43 @@ internal fun String.braced() = " ( $this ) "
 
 fun Var(name: String) = VariableExpression(name)
 fun Val(value: Double) = ValueExpression(value)
+fun Val(value: Int) = ValueExpression(value.toDouble())
 fun Wurzel(exp1: Expression) = WurzelExpression(exp1)
 fun Hoch2(exp1: Expression) = QuadratExpression(exp1)
-operator fun Expression.plus(exp1: Expression): Expression = PlusExpression(this, exp1)
-operator fun Expression.minus(exp1: Expression): Expression = MinusExpression(this, exp1)
-operator fun Expression.times(exp1: Expression): Expression = MalExpression(this, exp1)
-operator fun Expression.div(exp1: Expression): Expression = GeteiltExpression(this, exp1)
+
+fun Plus(exp1: Expression, exp2: Expression) = PlusExpression(exp1, exp2)
+fun Min(exp1: Expression, exp2: Expression) = PlusExpression(exp1, NegExpression(exp2))
+fun Mal(exp1: Expression, exp2: Expression) = MalExpression(exp1, exp2)
+fun Div(exp1: Expression, exp2: Expression) = MalExpression(exp1, KehrwertExpression(exp2))
+
+operator fun Expression.plus(that: Expression): Expression = Plus(this, that)
+operator fun Expression.minus(that: Expression): Expression = Min(this, that)
+operator fun Expression.times(that: Expression): Expression = Mal(this, that)
+operator fun Expression.div(that: Expression): Expression = Div(this, that)
+
+
+
+
+typealias VariableCount = HashMap<String, AtomicInteger>
+
+class VariableNotFoundException(varName: String) : RuntimeException("Die Variable '$varName' konnte nicht gefunden werden")
 
 // ***********************************************************************************************
 // ***********************************************************************************************
 // ***********************************************************************************************
-sealed class Expression(val expName: String, vararg children: Expression) {
-  val children = mutableListOf(*children)
-
+sealed class Expression(val expName: String) {
   abstract fun getValue(): Result
-  abstract fun copy(): Expression
+  /** creates a new instance of the current Expression using given children as new children */
+  abstract fun newInstance(children: List<Expression>): Expression
 
-  fun containsVariable(variable: String): Boolean {
-    return (this is VariableExpression && (this as de.mabe.cadaster.expression.VariableExpression).name == variable)
-        || children.any { it.containsVariable(variable) }
-  }
+  /** performs a deep copy */
+  fun copy(): Expression = newInstance(children().map { it.copy() })
 
-  /**
-   * returns this expression as a Graph
-   */
+  abstract fun children(): List<Expression>
+
+  fun containsVariable(variable: String): Boolean = (this is VariableExpression && this.name == variable) || children().any { it.containsVariable(variable) }
+
+  /** returns this expression as a Graph */
   fun toGraph(): String {
     operator fun String.times(x: Int): String {
       var res = ""
@@ -48,7 +61,7 @@ sealed class Expression(val expName: String, vararg children: Expression) {
 
     fun printExpr(sb: StringBuilder, exp: Expression, indent: Int) {
       sb.append("  " + "| " * indent + exp.expName + "\n")
-      exp.children.forEach { printExpr(sb, it, indent + 1) }
+      exp.children().forEach { printExpr(sb, it, indent + 1) }
     }
 
     val sb = StringBuilder()
@@ -56,45 +69,81 @@ sealed class Expression(val expName: String, vararg children: Expression) {
     return sb.toString()
   }
 
+  /** returns a new instance with a simplified expression */
   fun simplify(): Expression {
     val result = getValue()
     return when (result) {
       is ConcreteResult -> result.asExpression()
       is MissingVariableResult -> {
-        val copy = copy()
-        for ((index, child) in copy.children.withIndex())
-          copy.children[index] = child.simplify()
-        return copy
+        val newChildren = children().map { it.simplify() }
+        return newInstance(newChildren)
       }
     }
   }
+
+  fun withValue(varName: String, value: Int) = withValue(varName, value.toDouble())
+  fun withValue(varName: String, value: Double): Expression {
+    if (this is VariableExpression && this.name == varName)
+      return ValueExpression(value)
+    else
+      return newInstance(children().map { it.withValue(varName, value) })
+  }
+
+  fun variableCount(variableCount: VariableCount = VariableCount()): VariableCount {
+    traverseTree { if (it is VariableExpression) variableCount.getOrPut(it.name, { AtomicInteger() }).incrementAndGet() }
+    return variableCount
+  }
+
+
+  abstract fun shiftOver(varName: String, right: Expression): Pair<Expression, Expression>
+
+  /** Order: top, left, right */
+  private fun traverseTree(apply: (Expression) -> Unit) {
+    apply(this)
+    children().forEach { it.traverseTree(apply) }
+  }
+
+
 }
 
 class VariableExpression(val name: String) : Expression("VARIABLE: $name") {
   override fun getValue() = MissingVariableResult(name)
-  override fun toString() = " $name "
-  override fun copy() = VariableExpression(name)
+  override fun toString() = name
+  override fun children() = emptyList<Expression>()
+  override fun newInstance(children: List<Expression>) = VariableExpression(name)
+  override fun shiftOver(varName: String, right: Expression) = TODO()
 }
 
 class ValueExpression(val value: Double) : Expression("VALUE: $value") {
   override fun getValue(): Result = ConcreteResult(value)
-  override fun toString() = " $value "
-  override fun copy() = ValueExpression(value)
+  override fun toString() = value.toString()
+  override fun children() = emptyList<Expression>()
+  override fun newInstance(children: List<Expression>) = ValueExpression(value)
+  override fun shiftOver(varName: String, right: Expression) = TODO()
 }
 
 // ***********************************************************************************************
 
-abstract class SingleFieldExpression(name: String, val exp1: Expression) : Expression(name, exp1) {
+abstract class SingleFieldExpression(name: String, val exp1: Expression) : Expression(name) {
   override fun getValue(): Result {
     val res1 = exp1.getValue()
     return if (res1 is ConcreteResult) ConcreteResult(calculate(res1.value)) else res1
   }
 
   protected abstract fun calculate(v1: Double): Double
+
+  override fun children() = listOf(exp1)
+
+  override fun shiftOver(varName: String, right: Expression): Pair<Expression, Expression> {
+    if (!exp1.containsVariable(varName)) throw VariableNotFoundException(varName)
+    return Pair(exp1, invertOperation(right))
+  }
+
+  protected abstract fun invertOperation(exp: Expression): Expression
 }
 
 
-abstract class TwoFieldExpression(name: String, val exp1: Expression, val exp2: Expression) : Expression(name, exp1, exp2) {
+abstract class TwoFieldExpression(name: String, val exp1: Expression, val exp2: Expression) : Expression(name) {
   override fun getValue(): Result {
     val res1 = exp1.getValue()
     val res2 = exp2.getValue()
@@ -110,6 +159,18 @@ abstract class TwoFieldExpression(name: String, val exp1: Expression, val exp2: 
   }
 
   protected abstract fun calculate(v1: Double, v2: Double): Double
+
+  override fun children() = listOf(exp1, exp2)
+
+  override fun shiftOver(varName: String, right: Expression): Pair<Expression, Expression> {
+    return when {
+      exp1.containsVariable(varName) -> Pair(exp1, invertOperation(right, exp2))
+      exp2.containsVariable(varName) -> Pair(exp2, invertOperation(right, exp1))
+      else -> throw VariableNotFoundException(varName)
+    }
+  }
+
+  protected abstract fun invertOperation(right: Expression, otherExp: Expression): Expression
 }
 
 // ***********************************************************************************************
@@ -119,13 +180,15 @@ abstract class TwoFieldExpression(name: String, val exp1: Expression, val exp2: 
 open class WurzelExpression(exp1: Expression) : SingleFieldExpression("WURZEL", exp1) {
   override fun calculate(v1: Double) = Math.sqrt(v1)
   override fun toString() = "WURZEL $exp1".braced()
-  override fun copy() = WurzelExpression(exp1.copy())
+  override fun newInstance(children: List<Expression>) = WurzelExpression(children[0])
+  override fun invertOperation(exp: Expression) = QuadratExpression(exp)
 }
 
 open class QuadratExpression(exp1: Expression) : SingleFieldExpression("QUADRAT", exp1) {
   override fun calculate(v1: Double) = v1 * v1
   override fun toString() = "$exp1 ^ 2".braced()
-  override fun copy() = QuadratExpression(exp1.copy())
+  override fun newInstance(children: List<Expression>) = QuadratExpression(children[0])
+  override fun invertOperation(exp: Expression) = WurzelExpression(exp)
 }
 
 // ***********************************************************************************************
@@ -133,24 +196,28 @@ open class QuadratExpression(exp1: Expression) : SingleFieldExpression("QUADRAT"
 class PlusExpression(exp1: Expression, exp2: Expression) : TwoFieldExpression("PLUS", exp1, exp2) {
   override fun calculate(v1: Double, v2: Double) = v1 + v2
   override fun toString() = "$exp1 + $exp2".braced()
-  override fun copy() = PlusExpression(exp1.copy(), exp2.copy())
+  override fun newInstance(children: List<Expression>) = PlusExpression(children[0], children[1])
+  override fun invertOperation(right: Expression, otherExp: Expression) = right - otherExp
 }
 
-class MinusExpression(exp1: Expression, exp2: Expression) : TwoFieldExpression("MINUS", exp1, exp2) {
-  override fun calculate(v1: Double, v2: Double) = v1 - v2
-  override fun toString() = "$exp1 - $exp2".braced()
-  override fun copy() = MinusExpression(exp1.copy(), exp2.copy())
+class NegExpression(exp1: Expression) : SingleFieldExpression("NEG", exp1) {
+  override fun calculate(v1: Double) = -v1
+  override fun toString() = "-$exp1"
+  override fun newInstance(children: List<Expression>) = NegExpression(children[0])
+  override fun invertOperation(exp: Expression) = NegExpression(exp)
 }
 
 class MalExpression(exp1: Expression, exp2: Expression) : TwoFieldExpression("MAL", exp1, exp2) {
   override fun calculate(v1: Double, v2: Double) = v1 * v2
   override fun toString() = "$exp1 * $exp2".braced()
-  override fun copy() = MalExpression(exp1.copy(), exp2.copy())
+  override fun newInstance(children: List<Expression>) = MalExpression(children[0], children[1])
+  override fun invertOperation(right: Expression, otherExp: Expression) = right / otherExp
 }
 
-class GeteiltExpression(exp1: Expression, exp2: Expression) : TwoFieldExpression("GETEILT", exp1, exp2) {
-  override fun calculate(v1: Double, v2: Double) = v1 / v2
-  override fun toString() = "$exp1 / $exp2".braced()
-  override fun copy() = GeteiltExpression(exp1.copy(), exp2.copy())
+class KehrwertExpression(exp1: Expression) : SingleFieldExpression("KEHRWERT", exp1) {
+  override fun calculate(v1: Double) = 1 / v1
+  override fun toString() = "1/$exp1".braced()
+  override fun newInstance(children: List<Expression>) = KehrwertExpression(children[0])
+  override fun invertOperation(exp: Expression) = KehrwertExpression(exp)
 }
 
