@@ -104,6 +104,18 @@ sealed class Expression(val stringForGraph: String) {
     children().forEach { it.traverseTree(apply) }
   }
 
+  override fun toString(): String {
+    var str = innerToString()
+    str = str.replace("+ -", "- ")
+    str = str.replace(".0 ", " ")
+    if (str.startsWith("( ") && str.endsWith(" )"))
+      str = str.substring(2, str.length - 2)
+    return str
+  }
+
+  abstract fun innerToString(): String
+
+
   override fun equals(other: Any?): Boolean {
     if (other == null) return false
     if (other !is Expression) return false
@@ -118,7 +130,7 @@ sealed class Expression(val stringForGraph: String) {
 }
 
 class VariableExpression(val name: String) : Expression("VARIABLE: $name") {
-  override fun toString() = name
+  override fun innerToString() = name
   override fun children() = emptyList<Expression>()
   override fun newInstance(children: List<Expression>) = VariableExpression(name)
   override fun shiftOver(varName: String, right: Expression) = TODO()
@@ -126,7 +138,7 @@ class VariableExpression(val name: String) : Expression("VARIABLE: $name") {
 }
 
 class ValueExpression(val value: Double) : Expression("VALUE: $value") {
-  override fun toString() = value.toString()
+  override fun innerToString() = value.toString()
   override fun children() = emptyList<Expression>()
   override fun newInstance(children: List<Expression>) = ValueExpression(value)
   override fun shiftOver(varName: String, right: Expression) = throw VariableNotFoundException(varName)
@@ -169,7 +181,7 @@ abstract class TwoFieldExpression(stringForGraph: String, val exp1: Expression, 
 // ***********************************************************************************************
 
 open class WurzelExpression(exp1: Expression) : SingleFieldExpression("WURZEL", exp1) {
-  override fun toString() = "WURZEL $exp1".braced()
+  override fun innerToString() = "WURZEL ${exp1.innerToString()}".braced()
   override fun newInstance(children: List<Expression>) = WurzelExpression(children[0])
   override fun simplify(): Expression {
     val simpleChild = exp1.simplify()
@@ -184,7 +196,7 @@ open class WurzelExpression(exp1: Expression) : SingleFieldExpression("WURZEL", 
 }
 
 open class QuadratExpression(exp1: Expression) : SingleFieldExpression("QUADRAT", exp1) {
-  override fun toString() = "$exp1 ^ 2".braced()
+  override fun innerToString() = "${exp1.innerToString()} ^ 2".braced()
   override fun newInstance(children: List<Expression>) = QuadratExpression(children[0])
   override fun simplify(): Expression {
     val simpleChild = exp1.simplify()
@@ -202,7 +214,7 @@ open class QuadratExpression(exp1: Expression) : SingleFieldExpression("QUADRAT"
 
 
 class NegExpression(exp1: Expression) : SingleFieldExpression("NEG", exp1) {
-  override fun toString() = "-$exp1"
+  override fun innerToString() = "-${exp1.innerToString()}"
   override fun newInstance(children: List<Expression>) = NegExpression(children[0])
   override fun simplify(): Expression {
     val simpleChild = exp1.simplify()
@@ -217,7 +229,7 @@ class NegExpression(exp1: Expression) : SingleFieldExpression("NEG", exp1) {
 }
 
 class KehrwertExpression(exp1: Expression) : SingleFieldExpression("KEHRWERT", exp1) {
-  override fun toString() = "1/$exp1".braced()
+  override fun innerToString() = "1/${exp1.innerToString()}".braced()
   override fun newInstance(children: List<Expression>) = KehrwertExpression(children[0])
   override fun simplify(): Expression {
     val simpleChild = exp1.simplify()
@@ -232,7 +244,7 @@ class KehrwertExpression(exp1: Expression) : SingleFieldExpression("KEHRWERT", e
 }
 
 class PlusExpression(exp1: Expression, exp2: Expression) : TwoFieldExpression("PLUS", exp1, exp2) {
-  override fun toString() = "$exp1 + $exp2".braced()
+  override fun innerToString() = "${exp1.innerToString()} + ${exp2.innerToString()}".braced()
   override fun newInstance(children: List<Expression>) = PlusExpression(children[0], children[1])
   override fun simplify(): Expression = simplify(true)
   private fun simplify(useAssoziativ: Boolean): Expression {
@@ -297,7 +309,7 @@ class PlusExpression(exp1: Expression, exp2: Expression) : TwoFieldExpression("P
 
 
 class MalExpression(exp1: Expression, exp2: Expression) : TwoFieldExpression("MAL", exp1, exp2) {
-  override fun toString() = "$exp1 * $exp2".braced()
+  override fun innerToString() = "${exp1.innerToString()} * ${exp2.innerToString()}".braced()
   override fun newInstance(children: List<Expression>) = children[0] * children[1]
   override fun simplify(): Expression {
     val simpleChild1 = exp1.simplify()
