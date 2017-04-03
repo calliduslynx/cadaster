@@ -15,7 +15,7 @@ class UnableToSolve(val message: String) : SolveResult() {
 }
 
 class VariableNotRelevant(val varName: String, val gleichung: Gleichung) : SolveResult() {
-  override fun toString() = "Variable $varName not relevant. Simplified Gleichung: $gleichung (${gleichung.isCorrect()})"
+  override fun toString() = "SOLVED: Variable $varName not relevant. Simplified Gleichung: $gleichung (${gleichung.isCorrect()})"
 }
 
 

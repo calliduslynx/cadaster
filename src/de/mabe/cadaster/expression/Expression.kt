@@ -10,10 +10,6 @@ internal fun String.braced() = "( $this )"
 // ***********************************************************************************************
 // ***** shortings @formatter:off
 
-val x = Var("x")
-val y = Var("y")
-val z = Var("z")
-
 fun      Var( name: String)                       = VariableExpression(name)
 fun      Val(value: Double)                       = ValueExpression(value)
 fun      Val(value: Int)                          = ValueExpression(value.toDouble())
@@ -109,11 +105,15 @@ sealed class Expression(val stringForGraph: String) {
   }
 
   override fun equals(other: Any?): Boolean {
-    return other != null &&
-        other is Expression &&
-        other.javaClass == javaClass &&
-        children().size == other.children().size &&
-        children().mapIndexed { index, child -> child == other.children()[index] }.all { it }
+    if (other == null) return false
+    if (other !is Expression) return false
+    if (javaClass != other.javaClass) return false
+
+    return when (this) {
+      is VariableExpression -> this.name == (other as VariableExpression).name
+      is ValueExpression -> this.value == (other as ValueExpression).value
+      else -> children().size == other.children().size && children().mapIndexed { index, child -> child == other.children()[index] }.all { it }
+    }
   }
 }
 
@@ -234,7 +234,8 @@ class KehrwertExpression(exp1: Expression) : SingleFieldExpression("KEHRWERT", e
 class PlusExpression(exp1: Expression, exp2: Expression) : TwoFieldExpression("PLUS", exp1, exp2) {
   override fun toString() = "$exp1 + $exp2".braced()
   override fun newInstance(children: List<Expression>) = PlusExpression(children[0], children[1])
-  override fun simplify(): Expression {
+  override fun simplify(): Expression = simplify(true)
+  private fun simplify(useAssoziativ: Boolean): Expression {
     val simpleChild1 = exp1.simplify()
     val simpleChild2 = exp2.simplify()
     return when {
@@ -243,7 +244,50 @@ class PlusExpression(exp1: Expression, exp2: Expression) : TwoFieldExpression("P
       simpleChild2 is ValueExpression && simpleChild2.value == 0.0 -> simpleChild1
       simpleChild1 is NegExpression && simpleChild1.exp1 == simpleChild2 -> Val(0)
       simpleChild2 is NegExpression && simpleChild2.exp1 == simpleChild1 -> Val(0)
-      else -> PlusExpression(simpleChild1, simpleChild2)
+      else ->
+        if (useAssoziativ) {
+          // Assoziativ-Gesetz
+          val variableCount = HashMap<String, Double>()
+          fun HashMap<String, Double>.increment(valName: String, value: Double) {
+            this[valName] = this.getOrPut(valName, { 0.0 }) + value
+          }
+
+          val otherExp = mutableListOf<Expression>()
+          var sum = 0.0
+
+
+          fun traverse(exp1: Expression, exp2: Expression? = null) {
+            val isNeg = exp1 is NegExpression
+            val e = if (isNeg) (exp1 as NegExpression).exp1 else exp1
+
+            when (e) {
+              is ValueExpression -> sum += if (isNeg) -e.value else e.value
+              is VariableExpression -> variableCount.increment(e.name, if (isNeg) -1.0 else 1.0)
+              is PlusExpression -> if (!isNeg) traverse((exp1 as PlusExpression).exp1, exp1.exp2) else otherExp.add(exp1)
+              is MalExpression -> {
+                if (e.exp1 is VariableExpression && e.exp2 is ValueExpression)
+                  variableCount.increment(e.exp1.name, if (isNeg) -e.exp2.value else e.exp2.value)
+                else if (e.exp2 is VariableExpression && e.exp1 is ValueExpression)
+                  variableCount.increment(e.exp2.name, if (isNeg) -e.exp1.value else e.exp1.value)
+                else
+                  otherExp.add(exp1)
+              }
+              else -> otherExp.add(exp1)
+            }
+            if (exp2 != null) traverse(exp2)
+          }
+
+          traverse(this)
+
+          var curr: Expression = Val(sum)
+          variableCount.forEach { varName, count ->
+            curr = curr + (Var(varName) * count)
+          }
+          otherExp.forEach { curr = curr + it }
+          return if (curr is PlusExpression) (curr as PlusExpression).simplify(false) else curr.simplify()
+        } else {
+          Plus(simpleChild1, simpleChild2)
+        }
     }
   }
 
@@ -264,7 +308,10 @@ class MalExpression(exp1: Expression, exp2: Expression) : TwoFieldExpression("MA
       simpleChild2 is ValueExpression && simpleChild2.value == 0.0 -> Val(0.0)
       simpleChild1 is ValueExpression && simpleChild1.value == 1.0 -> simpleChild2
       simpleChild2 is ValueExpression && simpleChild2.value == 1.0 -> simpleChild1
+      simpleChild1 is ValueExpression && simpleChild1.value == -1.0 -> -simpleChild2
+      simpleChild2 is ValueExpression && simpleChild2.value == -1.0 -> -simpleChild1
       simpleChild2 is KehrwertExpression && simpleChild2.exp1 == simpleChild1 -> Val(1)
+      simpleChild1 is VariableExpression && simpleChild2 is VariableExpression && simpleChild1.name == simpleChild2.name -> Hoch2(simpleChild1)
       else -> MalExpression(simpleChild1, simpleChild2)
     }
   }
