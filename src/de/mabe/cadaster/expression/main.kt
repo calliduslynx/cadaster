@@ -50,30 +50,43 @@ fun main(args: Array<String>) {
 
 val gleichungen = listOf(
     Gleichung(
-        left = Val(12) + Var("x"),
-        right = Val(13) * Var("x")
+        left = Val(12) + x,
+        right = Val(13) * x
     ),
     Gleichung(
         left = (Val(12) + Val(23)) * Val(12),
-        right = (Val(13) * Var("x")) - (Val(12) / Val(4))
+        right = (Val(13) * x) - (Val(12) / Val(4))
     ),
     Gleichung(
         left = (Var("y") + Val(23)) * Val(12),
-        right = (Val(13) * Var("x")) - (Val(12) / Val(4))
+        right = (Val(13) * x) - (Val(12) / Val(4))
     )
 )
+val x2 = Var("x2")
+val x1 = Var("x1")
+val y2 = Var("y2")
+val y1 = Var("y1")
 
 val list = listOf(
     (Val(1.0) + Val(2.0)) - Val(1.5),
-    (Val(1.0) + Val(2.0)) - Var("x"),
-    (Var("x") + Var("y")) - ((Var("x") + Var("z")) + (Var("x") + Var("y"))),
-    Wurzel(Hoch2(Var("X2") - Var("X1")) + Hoch2(Var("Y2") - Var("Y1"))),
-    (Val(13) * Var("x")) - (Val(12) / Val(4)),
-    Var("x") - (Val(12) / Val(4)),
-    Var("x") + Var("x"),
-    Neg(Neg(Var("x"))),
-    Val(1) + Neg(Neg(Var("x"))),
-    Val(1) + Kehrwert(Kehrwert(Var("x"))),
-    Val(1) + Hoch2(Wurzel(Var("x"))),
-    Val(1) + Wurzel(Hoch2(Var("x")))
+    (Val(1.0) + Val(2.0)) - x,
+    (x + Var("y")) - ((x + Var("z")) + (x + Var("y"))),
+    Wurzel(Hoch2(x2 - x1) + Hoch2(y2 - y1)),
+    (x * 13) - (Val(12) / 4),
+    x - (Val(12) / 4),
+    x + x,
+    -x,
+    Neg(Neg(x)),
+    Neg(Neg(x)) + 1,
+    Kehrwert(Kehrwert(x)) + 1,
+    Hoch2(Wurzel(x)) + 1,
+    Wurzel(Hoch2(x)) + 1,
+    (x * 2) + x,
+    (x * 3) + (x * 4),
+    (Val(3) * x) + (Val(3) * x),
+    x * x,
+    x + x,
+    x * (Val(3) + 5),
+    x * ((x + x - 3) * 0 )
+
 )

@@ -27,7 +27,9 @@ open class Gleichung(val left: Expression, val right: Expression) {
   }
 
   open fun solveFor(varName: String): Gleichung {
-    if (variableCount()[varName]?.get() ?: 0 > 1) return NotSolvableGleichung(varName, "Die Variable kommt mehrfach vor!")
+    if (variableCount()[varName]?.get() ?: 0 > 1){
+      return NotSolvableGleichung(varName, "Die Variable kommt mehrfach vor!")
+    }
 
     // ***** bring var to left --- make deep copy
     var tmpLeft = (if (this.left.containsVariable(varName)) this.left else this.right).copy()

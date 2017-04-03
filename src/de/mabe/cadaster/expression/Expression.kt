@@ -8,33 +8,44 @@ internal fun String.braced() = "( $this )"
 // ***********************************************************************************************
 // ***********************************************************************************************
 // ***********************************************************************************************
-// ***** shortings
+// ***** shortings @formatter:off
 
-fun Var(name: String) = VariableExpression(name)
-fun Val(value: Double) = ValueExpression(value)
-fun Val(value: Int) = ValueExpression(value.toDouble())
-fun Wurzel(exp1: Expression) = WurzelExpression(exp1)
-fun Hoch2(exp1: Expression) = QuadratExpression(exp1)
+val x = Var("x")
+val y = Var("y")
+val z = Var("z")
 
-fun Neg(exp1: Expression) = NegExpression(exp1)
-fun Kehrwert(exp1: Expression) = KehrwertExpression(exp1)
-fun Plus(exp1: Expression, exp2: Expression) = PlusExpression(exp1, exp2)
-fun Min(exp1: Expression, exp2: Expression) = PlusExpression(exp1, Neg(exp2))
-fun Mal(exp1: Expression, exp2: Expression) = MalExpression(exp1, exp2)
-fun Div(exp1: Expression, exp2: Expression) = MalExpression(exp1, Kehrwert(exp2))
+fun      Var( name: String)                       = VariableExpression(name)
+fun      Val(value: Double)                       = ValueExpression(value)
+fun      Val(value: Int)                          = ValueExpression(value.toDouble())
+fun   Wurzel( exp1: Expression)                   = WurzelExpression(exp1)
+fun    Hoch2( exp1: Expression)                   = QuadratExpression(exp1)
 
-operator fun Expression.plus(that: Expression): Expression = Plus(this, that)
-operator fun Expression.minus(that: Expression): Expression = Min(this, that)
-operator fun Expression.times(that: Expression): Expression = Mal(this, that)
-operator fun Expression.div(that: Expression): Expression = Div(this, that)
+fun      Neg( exp1: Expression)                   = NegExpression(exp1)
+fun Kehrwert( exp1: Expression)                   = KehrwertExpression(exp1)
+fun     Plus( exp1: Expression, exp2: Expression) = PlusExpression(exp1, exp2)
+fun      Min( exp1: Expression, exp2: Expression) = PlusExpression(exp1, Neg(exp2))
+fun      Mal( exp1: Expression, exp2: Expression) = MalExpression(exp1, exp2)
+fun      Div( exp1: Expression, exp2: Expression) = MalExpression(exp1, Kehrwert(exp2))
 
-
-
+operator fun Expression.plus (that: Expression): Expression = Plus(this, that)
+operator fun Expression.plus (that: Double)    : Expression = Plus(this, Val(that))
+operator fun Expression.plus (that: Int)       : Expression = Plus(this, Val(that))
+operator fun Expression.minus(that: Expression): Expression =  Min(this, that)
+operator fun Expression.minus(that: Double)    : Expression =  Min(this, Val(that))
+operator fun Expression.minus(that: Int)       : Expression =  Min(this, Val(that))
+operator fun Expression.times(that: Expression): Expression =  Mal(this, that)
+operator fun Expression.times(that: Double)    : Expression =  Mal(this, Val(that))
+operator fun Expression.times(that: Int)       : Expression =  Mal(this, Val(that))
+operator fun Expression.div  (that: Expression): Expression =  Div(this, that)
+operator fun Expression.div  (that: Double)    : Expression =  Div(this, Val(that))
+operator fun Expression.div  (that: Int)       : Expression =  Div(this, Val(that))
+operator fun Expression.unaryMinus()           : Expression =  Neg(this)
 
 typealias VariableCount = HashMap<String, AtomicInteger>
 
 class VariableNotFoundException(varName: String) : RuntimeException("Die Variable '$varName' konnte nicht gefunden werden")
 
+//@formatter:on
 // ***********************************************************************************************
 // ***********************************************************************************************
 // ***********************************************************************************************
