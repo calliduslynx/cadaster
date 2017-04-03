@@ -17,7 +17,6 @@ fun main(args: Array<String>) {
     println("     with x=5 simple: " + it.withValue("x", 5).simplify())
     println("  with x=5 isCorrect: " + it.withValue("x", 5).isCorrect())
     println("         solve for x: " + it.solveFor("x"))
-    println("  solve for x simple: " + it.solveFor("x").simplify())
   }
 
   println()
@@ -27,45 +26,39 @@ fun main(args: Array<String>) {
     println("-------------------------------------")
     println(it)
     println()
-    println("              value: " + it.getValue())
-    println("             simple: " + it.simplify())
+    println("              simple: " + it.simplify())
     println("      variable-count: " + it.variableCount())
     println("            with x=5: " + it.withValue("x", 5))
     println("     with x=5 simple: " + it.withValue("x", 5).simplify())
-    val s1 = try {
-      Gleichung(it, Val(0)).solveFor("x")
-    } catch (e: Exception) {
-      "NOT SOLVEABLE"
-    }
-    println("         solve for x: " + s1)
-    val s2 = try {
-      Gleichung(it, Val(0)).solveFor("x").simplify()
-    } catch (e: Exception) {
-      "NOT SOLVEABLE"
-    }
-    println("  solve for x simple: " + s2)
+    println("         solve for x: " + Gleichung(it, Val(0)).solveFor("x"))
   }
 }
 
-
-val gleichungen = listOf(
-    Gleichung(
-        left = Val(12) + x,
-        right = Val(13) * x
-    ),
-    Gleichung(
-        left = (Val(12) + Val(23)) * Val(12),
-        right = (Val(13) * x) - (Val(12) / Val(4))
-    ),
-    Gleichung(
-        left = (Var("y") + Val(23)) * Val(12),
-        right = (Val(13) * x) - (Val(12) / Val(4))
-    )
-)
 val x2 = Var("x2")
 val x1 = Var("x1")
 val y2 = Var("y2")
 val y1 = Var("y1")
+
+
+val gleichungen = listOf(
+    Gleichung(
+        left = x + 12,
+        right = x * 13
+    ),
+    Gleichung(
+        left = (Val(12) + 23) * 12,
+        right = (x * 13) - (Val(12) / 4)
+    ),
+    Gleichung(
+        left = (y + 23) * 12,
+        right = (x * 13) - (Val(12) / 4)
+    ),
+    Gleichung(
+        left = x + 4,
+        right = x * 0
+    )
+)
+
 
 val list = listOf(
     (Val(1.0) + Val(2.0)) - Val(1.5),
@@ -87,6 +80,8 @@ val list = listOf(
     x * x,
     x + x,
     x * (Val(3) + 5),
-    x * ((x + x - 3) * 0 )
-
+    x * ((x + x - 3) * 0),
+    (x * y) - (x * y),
+    (x * 2 + y) / (x * 2 + y),
+    x + 2 + x + 4 + x
 )
