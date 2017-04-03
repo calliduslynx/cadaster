@@ -16,10 +16,12 @@ fun Val(value: Int) = ValueExpression(value.toDouble())
 fun Wurzel(exp1: Expression) = WurzelExpression(exp1)
 fun Hoch2(exp1: Expression) = QuadratExpression(exp1)
 
+fun Neg(exp1: Expression) = NegExpression(exp1)
+fun Kehrwert(exp1: Expression) = KehrwertExpression(exp1)
 fun Plus(exp1: Expression, exp2: Expression) = PlusExpression(exp1, exp2)
-fun Min(exp1: Expression, exp2: Expression) = PlusExpression(exp1, NegExpression(exp2))
+fun Min(exp1: Expression, exp2: Expression) = PlusExpression(exp1, Neg(exp2))
 fun Mal(exp1: Expression, exp2: Expression) = MalExpression(exp1, exp2)
-fun Div(exp1: Expression, exp2: Expression) = MalExpression(exp1, KehrwertExpression(exp2))
+fun Div(exp1: Expression, exp2: Expression) = MalExpression(exp1, Kehrwert(exp2))
 
 operator fun Expression.plus(that: Expression): Expression = Plus(this, that)
 operator fun Expression.minus(that: Expression): Expression = Min(this, that)
@@ -36,7 +38,7 @@ class VariableNotFoundException(varName: String) : RuntimeException("Die Variabl
 // ***********************************************************************************************
 // ***********************************************************************************************
 // ***********************************************************************************************
-sealed class Expression(val expName: String) {
+sealed class Expression(val stringForGraph: String) {
   abstract fun getValue(): Result
   /** creates a new instance of the current Expression using given children as new children */
   abstract fun newInstance(children: List<Expression>): Expression
@@ -60,7 +62,7 @@ sealed class Expression(val expName: String) {
     }
 
     fun printExpr(sb: StringBuilder, exp: Expression, indent: Int) {
-      sb.append("  " + "| " * indent + exp.expName + "\n")
+      sb.append("  " + "| " * indent + exp.stringForGraph + "\n")
       exp.children().forEach { printExpr(sb, it, indent + 1) }
     }
 
@@ -75,11 +77,14 @@ sealed class Expression(val expName: String) {
     return when (result) {
       is ConcreteResult -> result.asExpression()
       is MissingVariableResult -> {
-        val newChildren = children().map { it.simplify() }
-        return newInstance(newChildren)
+        val instanceToCheck = simplifedInstance()
+        val newChildren = instanceToCheck.children().map { it.simplify() }
+        return instanceToCheck.newInstance(newChildren)
       }
     }
   }
+
+  protected open fun simplifedInstance() = this
 
   fun withValue(varName: String, value: Int) = withValue(varName, value.toDouble())
   fun withValue(varName: String, value: Double): Expression {
@@ -95,6 +100,7 @@ sealed class Expression(val expName: String) {
   }
 
 
+  /** entfernt die aktuelle Expression, simuliert ein Shiften auf die andere Seite */
   abstract fun shiftOver(varName: String, right: Expression): Pair<Expression, Expression>
 
   /** Order: top, left, right */
@@ -102,8 +108,6 @@ sealed class Expression(val expName: String) {
     apply(this)
     children().forEach { it.traverseTree(apply) }
   }
-
-
 }
 
 class VariableExpression(val name: String) : Expression("VARIABLE: $name") {
@@ -124,7 +128,7 @@ class ValueExpression(val value: Double) : Expression("VALUE: $value") {
 
 // ***********************************************************************************************
 
-abstract class SingleFieldExpression(name: String, val exp1: Expression) : Expression(name) {
+abstract class SingleFieldExpression(stringForGraph: String, val exp1: Expression) : Expression(stringForGraph) {
   override fun getValue(): Result {
     val res1 = exp1.getValue()
     return if (res1 is ConcreteResult) ConcreteResult(calculate(res1.value)) else res1
@@ -143,7 +147,7 @@ abstract class SingleFieldExpression(name: String, val exp1: Expression) : Expre
 }
 
 
-abstract class TwoFieldExpression(name: String, val exp1: Expression, val exp2: Expression) : Expression(name) {
+abstract class TwoFieldExpression(stringForGraph: String, val exp1: Expression, val exp2: Expression) : Expression(stringForGraph) {
   override fun getValue(): Result {
     val res1 = exp1.getValue()
     val res2 = exp2.getValue()
@@ -182,6 +186,7 @@ open class WurzelExpression(exp1: Expression) : SingleFieldExpression("WURZEL", 
   override fun toString() = "WURZEL $exp1".braced()
   override fun newInstance(children: List<Expression>) = WurzelExpression(children[0])
   override fun invertOperation(exp: Expression) = QuadratExpression(exp)
+  override fun simplifedInstance() = if (exp1 is QuadratExpression) exp1.exp1 else this
 }
 
 open class QuadratExpression(exp1: Expression) : SingleFieldExpression("QUADRAT", exp1) {
@@ -189,6 +194,7 @@ open class QuadratExpression(exp1: Expression) : SingleFieldExpression("QUADRAT"
   override fun toString() = "$exp1 ^ 2".braced()
   override fun newInstance(children: List<Expression>) = QuadratExpression(children[0])
   override fun invertOperation(exp: Expression) = WurzelExpression(exp)
+  override fun simplifedInstance() = if (exp1 is WurzelExpression) exp1.exp1 else this
 }
 
 // ***********************************************************************************************
@@ -205,6 +211,7 @@ class NegExpression(exp1: Expression) : SingleFieldExpression("NEG", exp1) {
   override fun toString() = "-$exp1"
   override fun newInstance(children: List<Expression>) = NegExpression(children[0])
   override fun invertOperation(exp: Expression) = NegExpression(exp)
+  override fun simplifedInstance() = if (exp1 is NegExpression) exp1.exp1 else this
 }
 
 class MalExpression(exp1: Expression, exp2: Expression) : TwoFieldExpression("MAL", exp1, exp2) {
@@ -219,5 +226,6 @@ class KehrwertExpression(exp1: Expression) : SingleFieldExpression("KEHRWERT", e
   override fun toString() = "1/$exp1".braced()
   override fun newInstance(children: List<Expression>) = KehrwertExpression(children[0])
   override fun invertOperation(exp: Expression) = KehrwertExpression(exp)
+  override fun simplifedInstance() = if (exp1 is KehrwertExpression) exp1.exp1 else this
 }
 
