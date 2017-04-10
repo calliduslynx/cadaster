@@ -24,7 +24,7 @@ enum class PrintChar(val left: String, val middle: String = left, val right: Str
 var graphEndings = Pair(SLASH, SLASH)
 
 /** first: topLine, second: bottomLine */
-var putInBoxes: Boxer? = null
+var putInBoxes: Boxer? = Extravagant
 
 
 enum class Boxer(val boxMethod: (String) -> String) {
@@ -196,32 +196,32 @@ fun main(args: Array<String>) {
   )
 
   expressions.forEach {
-    for (i in 1..6) {
+    for (i in 5..6) {
       graphEndings = when (i) {
-        1 -> Pair(SLASH, SLASH)
-        2 -> Pair(PIPE, PIPE)
-        3 -> Pair(SLASH, PIPE)
-        4 -> Pair(PIPE, SLASH)
+        1 -> Pair(PIPE, PIPE)
+        2 -> Pair(SLASH, PIPE)
+        3 -> Pair(PIPE, SLASH)
+        4 -> Pair(PIPE, V)
         5 -> Pair(SLASH, V)
-        else -> Pair(PIPE, V)
+        else -> Pair(SLASH, SLASH)
       }
 
-      for (j in 0..6) {
+      for (j in 5..7) {
         putInBoxes = when (j) {
           1 -> Minus
           2 -> Addig
           3 -> BigBox
           4 -> Comment
-          5 -> Extravagant
-          6 -> Art
+          5 -> Art
+          6 -> Extravagant
           else -> null
         }
 
-        println("= $graphEndings $putInBoxes=\n")
+        println("\n= $graphEndings $putInBoxes=\n")
         println(getAsTree(it, { it.stringForGraph }, { it.children() }))
       }
     }
-    println("\n----------------------\n----------------------\n----------------------\n")
+    println("\n----------------------\n----------------------\n----------------------")
   }
 
 }
