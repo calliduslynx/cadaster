@@ -1,5 +1,6 @@
 package de.mabe.cadaster.expression
 
+import de.mabe.cadaster.util.getAsTree
 import java.util.concurrent.atomic.AtomicInteger
 
 
@@ -14,7 +15,7 @@ fun      Var( name: String)                       = VariableExpression(name)
 fun      Val(value: Double)                       = ValueExpression(value)
 fun      Val(value: Int)                          = ValueExpression(value.toDouble())
 fun   Wurzel( exp1: Expression)                   = WurzelExpression(exp1)
-fun    Hoch2( exp1: Expression)                   = QuadratExpression(exp1)
+fun  Quadrat( exp1: Expression)                   = QuadratExpression(exp1)
 
 fun      Neg( exp1: Expression)                   = NegExpression(exp1)
 fun Kehrwert( exp1: Expression)                   = KehrwertExpression(exp1)
@@ -57,25 +58,7 @@ sealed class Expression(val stringForGraph: String) {
   fun containsVariable(variable: String): Boolean = (this is VariableExpression && this.name == variable) || children().any { it.containsVariable(variable) }
 
   /** returns this expression as a Graph */
-  fun toGraph(): String {
-    operator fun String.times(x: Int): String {
-      var res = ""
-      for (i in 1..x) {
-        res += this
-      }
-      if (res == "") return ""
-      return res.take(res.length - 1) + "->"
-    }
-
-    fun printExpr(sb: StringBuilder, exp: Expression, indent: Int) {
-      sb.append("  " + "| " * indent + exp.stringForGraph + "\n")
-      exp.children().forEach { printExpr(sb, it, indent + 1) }
-    }
-
-    val sb = StringBuilder()
-    printExpr(sb, this, 0)
-    return sb.toString()
-  }
+  fun toGraph() = getAsTree(this, { it.stringForGraph }, { it.children() })
 
   /** returns a new instance with a simplified expression */
   abstract fun simplify(): Expression
@@ -129,7 +112,7 @@ sealed class Expression(val stringForGraph: String) {
   }
 }
 
-class VariableExpression(val name: String) : Expression("VARIABLE: $name") {
+class VariableExpression(val name: String) : Expression(name) {
   override fun innerToString() = name
   override fun children() = emptyList<Expression>()
   override fun newInstance(children: List<Expression>) = VariableExpression(name)
@@ -137,7 +120,7 @@ class VariableExpression(val name: String) : Expression("VARIABLE: $name") {
   override fun simplify() = this
 }
 
-class ValueExpression(val value: Double) : Expression("VALUE: $value") {
+class ValueExpression(val value: Double) : Expression("$value") {
   override fun innerToString() = value.toString()
   override fun children() = emptyList<Expression>()
   override fun newInstance(children: List<Expression>) = ValueExpression(value)
@@ -218,6 +201,9 @@ class NegExpression(exp1: Expression) : SingleFieldExpression("NEG", exp1) {
   override fun newInstance(children: List<Expression>) = NegExpression(children[0])
   override fun simplify(): Expression {
     val simpleChild = exp1.simplify()
+
+    if (simpleChild is ValueExpression && simpleChild.value == 0.0) return Val(0) // FIXME: ... 
+
     return when (simpleChild) {
       is ValueExpression -> ValueExpression(-simpleChild.value)
       is NegExpression -> simpleChild.exp1
@@ -323,7 +309,7 @@ class MalExpression(exp1: Expression, exp2: Expression) : TwoFieldExpression("MA
       simpleChild1 is ValueExpression && simpleChild1.value == -1.0 -> -simpleChild2
       simpleChild2 is ValueExpression && simpleChild2.value == -1.0 -> -simpleChild1
       simpleChild2 is KehrwertExpression && simpleChild2.exp1 == simpleChild1 -> Val(1)
-      simpleChild1 is VariableExpression && simpleChild2 is VariableExpression && simpleChild1.name == simpleChild2.name -> Hoch2(simpleChild1)
+      simpleChild1 is VariableExpression && simpleChild2 is VariableExpression && simpleChild1.name == simpleChild2.name -> Quadrat(simpleChild1)
       else -> MalExpression(simpleChild1, simpleChild2)
     }
   }

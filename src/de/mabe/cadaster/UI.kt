@@ -3,7 +3,6 @@ package de.mabe.cadaster
 import javafx.application.Application
 import javafx.beans.binding.Bindings
 import javafx.geometry.Insets
-import javafx.geometry.Side
 import javafx.geometry.Side.BOTTOM
 import javafx.geometry.Side.LEFT
 import javafx.scene.Scene
@@ -11,9 +10,8 @@ import javafx.scene.chart.NumberAxis
 import javafx.scene.layout.Pane
 import javafx.scene.layout.StackPane
 import javafx.scene.paint.Color
-import javafx.scene.shape.*
+import javafx.scene.shape.Circle
 import javafx.stage.Stage
-import java.util.function.Function
 
 
 fun main(args: Array<String>) {
@@ -28,7 +26,11 @@ class UI : Application() {
         yLow = -6.0, yHi = 6.0, yTickUnit = 1.0
     )
 
-    val plot = Plot(Function { x -> .25 * (x + 4) * (x + 1) * (x - 2) }, -8.0, 8.0, 1.0, axes)
+    val plot = Plot(axes, listOf(
+        Pair(1.0, 1.0),
+        Pair(2.0, 4.0)
+    ))
+    
     val layout = StackPane(plot)
     layout.padding = Insets(20.0)
 
@@ -74,65 +76,20 @@ class Axes(
   }
 }
 
-class Plot(
-    f: Function<Double, Double>,
-    xMin: Double, xMax: Double, xInc: Double, axes: Axes
-) : Pane() {
+class Plot(axes: Axes, points: List<Pair<Double, Double>>) : Pane() {
   init {
-    val path = Path()
-    path.stroke = Color.ORANGE.deriveColor(0.0, 1.0, 1.0, 0.6)
-    path.strokeWidth = 2.0
-
-    path.clip = Rectangle(// maximaler Rahmen
-        0.0, 0.0,
-        axes.prefWidth,
-        axes.prefHeight
-    )
-
-
-    path.elements.add(MoveTo(mapX(1.0, axes), mapY(1.0, axes)))
-    path.elements.add(LineTo(mapX(2.0, axes), mapY(2.0, axes)))
-    path.elements.add(LineTo(mapX(2.0, axes), mapY(-2.0, axes)))
-
-    val arcTo = ArcTo()
-    arcTo.x = 1.0
-    arcTo.y = 1.0
-    arcTo.radiusX = 1.0
-    arcTo.radiusY = 1.0
-    path.elements.add(arcTo)
-
-
-    var x = xMin
-    var y = f.apply(x)
-
-    path.elements.add(
-        MoveTo(
-            mapX(x, axes), mapY(y, axes)
-        )
-    )
-
-    x += xInc
-    while (x < xMax) {
-      y = f.apply(x)
-
-      path.elements.add(
-          LineTo(
-              mapX(x, axes), mapY(y, axes)
-          )
-      )
-
-      x += xInc
-    }
-
     setMinSize(USE_PREF_SIZE, USE_PREF_SIZE)
     setPrefSize(axes.prefWidth, axes.prefHeight)
     setMaxSize(USE_PREF_SIZE, USE_PREF_SIZE)
 
-    val circle = Circle()
-    circle.centerX = mapX(2.0, axes)
-    circle.centerY = mapY(2.0, axes)
-    circle.radius = 3.0
-    children.setAll(axes, path, circle)
+    children.setAll(axes)
+    points.forEach {
+      val circle = Circle()
+      circle.centerX = mapX(it.first, axes)
+      circle.centerY = mapY(it.second, axes)
+      circle.radius = 3.0
+      children.add(circle)
+    }
 
   }
 

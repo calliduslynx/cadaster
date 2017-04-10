@@ -22,7 +22,7 @@ class VariableNotRelevant(val varName: String, val gleichung: Gleichung) : Solve
 class Gleichung(val left: Expression, val right: Expression) {
   override fun toString() = "$left = $right"
   fun simplify() = Gleichung(left.simplify(), right.simplify())
-  fun variableCount(): VariableCount = left.variableCount(right.variableCount())
+  fun variableCount(variableCount: VariableCount = VariableCount()): VariableCount = left.variableCount(right.variableCount(variableCount))
   fun withValue(varName: String, value: Int) = withValue(varName, value.toDouble())
   fun withValue(varName: String, value: Double) = Gleichung(left.withValue(varName, value), right.withValue(varName, value))
   fun isCorrect(): GleichungKorrect {
