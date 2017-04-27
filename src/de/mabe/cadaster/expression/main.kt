@@ -65,6 +65,11 @@ val gleichungssysteme = listOf(
         Gleichung(Val(4), IST_GLEICH, x),
         Gleichung(Val(12), IST_GLEICH, x + y)
     ),
+//    Gleichungssystem(
+//        Gleichung(Val(4), IST_GLEICH, x),
+//        Gleichung(Val(12), IST_GLEICH, x + y),
+//        Gleichung(Val(24), IST_GLEICH, x + y + z)
+//    ),
     Gleichungssystem(
         Gleichung(Val(4), IST_GLEICH, x + y),
         Gleichung(Val(12), IST_GLEICH, x - y)
@@ -80,7 +85,7 @@ val gleichungssysteme = listOf(
         Gleichung(y, IST_GLEICH, x * 3)
     )
     ,
-    Gleichungssystem( // LOOP
+    Gleichungssystem(// LOOP
         Gleichung(Val(4), IST_GLEICH, Val(1) / (x + y)),
         Gleichung(Val(4), IST_GLEICH, Val(1) / (z + y + x))
     )

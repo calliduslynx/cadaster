@@ -107,7 +107,6 @@ sealed class Expression(val stringForGraph: String) {
 
   abstract fun innerToString(): String
 
-
   override fun equals(other: Any?): Boolean {
     if (other == null) return false
     if (other !is Expression) return false
@@ -371,6 +370,7 @@ class MalExpression(exp1: Expression, exp2: Expression) : TwoFieldExpression("MA
     val simpleChild1 = exp1.simplify()
     val simpleChild2 = exp2.simplify()
     return when {
+      simpleChild1 == simpleChild2 -> Quadrat(simpleChild1)
       simpleChild1 is ValueExpression && simpleChild2 is ValueExpression -> Val(simpleChild1.value * simpleChild2.value)
       simpleChild1 is ValueExpression && simpleChild1.value == 0.0 -> Val(0.0)
       simpleChild2 is ValueExpression && simpleChild2.value == 0.0 -> Val(0.0)
@@ -380,6 +380,8 @@ class MalExpression(exp1: Expression, exp2: Expression) : TwoFieldExpression("MA
       simpleChild2 is ValueExpression && simpleChild2.value == -1.0 -> -simpleChild1
       simpleChild2 is KehrwertExpression && simpleChild2.exp1 == simpleChild1 -> Val(1)
       simpleChild1 is VariableExpression && simpleChild2 is VariableExpression && simpleChild1.name == simpleChild2.name -> Quadrat(simpleChild1)
+      simpleChild1 is PlusExpression -> ((simpleChild1.exp1 * simpleChild2) + (simpleChild1.exp2 * simpleChild2)).simplify()
+      simpleChild2 is PlusExpression -> ((simpleChild1 * simpleChild2.exp1) + (simpleChild1 * simpleChild2.exp2)).simplify()
       else -> MalExpression(simpleChild1, simpleChild2)
     }
   }

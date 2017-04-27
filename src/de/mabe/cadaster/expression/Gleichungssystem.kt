@@ -51,8 +51,10 @@ class Gleichungssystem(vararg gleichungen: Gleichung) {
     println(" > alle bekannten Gleichungen:")
     alleBekanntenGleichungen.forEach { println("        $it") }
 
-    println(" > gleichungen umgestellt nach Variablen:")
-    alleBekanntenGleichungenDieUmgestelltSind.forEach { println("        $it") }
+    if (DEBUG) {
+      println(" > gleichungen umgestellt nach Variablen:")
+      alleBekanntenGleichungenDieUmgestelltSind.forEach { println("        $it") }
+    }
 
 
     var umgestellteGleichungenIndex = 0
@@ -61,7 +63,7 @@ class Gleichungssystem(vararg gleichungen: Gleichung) {
       val umgestellteGleichungZumEinsetzen = alleBekanntenGleichungenDieUmgestelltSind[umgestellteGleichungenIndex]
       if (umgestellteGleichungZumEinsetzen.gleichheit == IST_GLEICH) {
 
-        println("   > Substituiere " + umgestellteGleichungZumEinsetzen)
+        debug("   > Substituiere " + umgestellteGleichungZumEinsetzen)
 
         alleBekanntenGleichungen.forEach { bekannteGleichung ->
           debug("     > in Gleichung " + bekannteGleichung)
@@ -106,7 +108,7 @@ class Gleichungssystem(vararg gleichungen: Gleichung) {
 
     // TODO noch nicht ermittelte Variablen anhand ihres Wertebereichs ermitteln
     // immer nur eine neue Variable und dann wieder einsetzen
-    
+
     // TODO mit allen ermittelten Variablen alle Gleichungen testen
   }
 
