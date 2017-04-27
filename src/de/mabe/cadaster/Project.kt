@@ -2,6 +2,7 @@ package de.mabe.cadaster
 
 import de.mabe.cadaster.PValueType.exactly
 import de.mabe.cadaster.expression.*
+import de.mabe.cadaster.expression.Gleichheit.IST_GLEICH
 
 
 class Project {
@@ -87,8 +88,9 @@ data class PointDistanceRule(
     val distance: Double
 ) : Rule() {
   override fun gleichung() = Gleichung(
-      left = Quadrat(Val(distance)),
-      right = Quadrat(Var("$idPoint2.x") - Var("$idPoint1.x")) + Quadrat(Var("$idPoint2.y") - Var("$idPoint1.y"))
+      Quadrat(Val(distance)),
+      IST_GLEICH,
+      Quadrat(Var("$idPoint2.x") - Var("$idPoint1.x")) + Quadrat(Var("$idPoint2.y") - Var("$idPoint1.y"))
   )
 
   override fun toString() = "PointDistanceRule: distance between $idPoint1 and $idPoint2 must be $distance"

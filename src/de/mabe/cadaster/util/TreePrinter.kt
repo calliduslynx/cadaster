@@ -16,15 +16,13 @@ private fun Int.isOdd() = !this.isEven()
 enum class Side {left, right }
 enum class PrintChar(val left: String, val middle: String = left, val right: String = left) {
   V("V"), SLASH("/", "|", "\\"), PIPE("|");
-
-  fun get(side: Side) = if (side == Side.left) left else right
 }
 
 /** first: top, second: bottom */
 var graphEndings = Pair(SLASH, SLASH)
 
 /** first: topLine, second: bottomLine */
-var putInBoxes: Boxer? = Extravagant
+var putInBoxes: Boxer? = null
 
 
 enum class Boxer(val boxMethod: (String) -> String) {
@@ -152,7 +150,7 @@ fun <T> getAsTree(element: T, getName: (T) -> String, getChildren: (T) -> List<T
         val indentForOver = if (thisBlock.width.isEven())
           (leftBlock.width + spacer.length / 2) - (thisBlock.width / 2)
         else
-          leftBlock.width - thisBlock.width / 2
+          1 + leftBlock.width - thisBlock.width / 2
 
         thisBlock.indent(indentForOver)
         val over = " ".repeat(lowLeft + 1) + "_".repeat(topLeft - 1 - lowLeft) + graphEndings.first.left +
@@ -176,7 +174,6 @@ fun <T> getAsTree(element: T, getName: (T) -> String, getChildren: (T) -> List<T
 
 
 fun main(args: Array<String>) {
-
   val expressions = listOf(
       Wurzel(Var("a")), Wurzel(Var("ab")), Wurzel(Var("abc")), Wurzel(Var("abcd")),
       -Var("a"), -Var("ab"), -Var("abc"), -Var("abcd"),
@@ -191,12 +188,12 @@ fun main(args: Array<String>) {
       x + x, Var("xyz") + Var("xyza"), Var("xyza") + Var("xyz"), Var("12345") + Var("123456"),
       x * y,
       Wurzel(x + 23456789),
-      x + y - z + 1234567 + 123456 + 9876543 + 2345678 + (y * 43234567 + Wurzel(x + 234567))
-
+      x + y - 12345678 + 1234567 + 123456 + 9876543 + 2345678 + (Var("acbasdbadsb") * 43234567 + Wurzel(x + 234567)),
+      x * 3
   )
 
   expressions.forEach {
-    for (i in 5..6) {
+    for (i in 6..6) {
       graphEndings = when (i) {
         1 -> Pair(PIPE, PIPE)
         2 -> Pair(SLASH, PIPE)
@@ -206,7 +203,7 @@ fun main(args: Array<String>) {
         else -> Pair(SLASH, SLASH)
       }
 
-      for (j in 5..7) {
+      for (j in 0..6) {
         putInBoxes = when (j) {
           1 -> Minus
           2 -> Addig

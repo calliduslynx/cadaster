@@ -1,5 +1,7 @@
 package de.mabe.cadaster.expression
 
+import de.mabe.cadaster.expression.Gleichheit.IST_GROESSER_GLEICH
+import de.mabe.cadaster.expression.Gleichheit.IST_UNGLEICH
 import de.mabe.cadaster.util.getAsTree
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -64,10 +66,10 @@ sealed class Expression(val stringForGraph: String) {
   abstract fun simplify(): Expression
 
   fun withValue(varName: String, value: Int) = withValue(varName, value.toDouble())
-
-  fun withValue(varName: String, value: Double): Expression {
+  fun withValue(varName: String, value: Double) = withValue(varName, Val(value))
+  fun withValue(varName: String, value: Expression): Expression {
     if (this is VariableExpression && this.name == varName)
-      return ValueExpression(value)
+      return value
     else
       return newInstance(children().map { it.withValue(varName, value) })
   }
@@ -77,9 +79,16 @@ sealed class Expression(val stringForGraph: String) {
     return variableCount
   }
 
+  fun wertebereiche(): List<Gleichung> {
+    val list = ArrayList<Gleichung?>()
+    traverseTree { list.add(it.wertebereich()) }
+    return list.filterNotNull()
+  }
+
+  open protected fun wertebereich(): Gleichung? = null
 
   /** entfernt die aktuelle Expression, simuliert ein Shiften auf die andere Seite */
-  abstract fun shiftOver(varName: String, right: Expression): Pair<Expression, Expression>
+  abstract fun shiftOver(varName: String, right: Expression): Triple<Expression, Expression, Boolean>
 
   /** Order: top, left, right */
   private fun traverseTree(apply: (Expression) -> Unit) {
@@ -104,10 +113,19 @@ sealed class Expression(val stringForGraph: String) {
     if (other !is Expression) return false
     if (javaClass != other.javaClass) return false
 
-    return when (this) {
-      is VariableExpression -> this.name == (other as VariableExpression).name
-      is ValueExpression -> this.value == (other as ValueExpression).value
-      else -> children().size == other.children().size && children().mapIndexed { index, child -> child == other.children()[index] }.all { it }
+    if (this is VariableExpression) return this.name == (other as VariableExpression).name
+    if (this is ValueExpression) return this.value == (other as ValueExpression).value
+
+    val tC = children()
+    val oC = other.children()
+
+    if (tC.size != oC.size) return false
+
+    if (tC.size == 1) {
+      return tC[0] == oC[0]
+    } else {
+      return (tC[0] == oC[0] && tC[1] == oC[1]) ||
+          (tC[0] == oC[1] && tC[1] == oC[0])
     }
   }
 }
@@ -133,30 +151,31 @@ class ValueExpression(val value: Double) : Expression("$value") {
 abstract class SingleFieldExpression(stringForGraph: String, val exp1: Expression) : Expression(stringForGraph) {
   override fun children() = listOf(exp1)
 
-  override fun shiftOver(varName: String, right: Expression): Pair<Expression, Expression> {
+  override fun shiftOver(varName: String, right: Expression): Triple<Expression, Expression, Boolean> {
     if (!exp1.containsVariable(varName)) throw VariableNotFoundException(varName)
-    return Pair(exp1, invertOperation(right))
+    debug("> part to shift: $this .. inverted: " + invertOperation(right))
+    return Triple(exp1, invertOperation(right), flip())
   }
 
+  protected abstract fun flip(): Boolean
   protected abstract fun invertOperation(exp: Expression): Expression
 }
 
 
 abstract class TwoFieldExpression(stringForGraph: String, val exp1: Expression, val exp2: Expression) : Expression(stringForGraph) {
   override fun children() = listOf(exp1, exp2)
-  override fun shiftOver(varName: String, right: Expression): Pair<Expression, Expression> {
+  override fun shiftOver(varName: String, right: Expression): Triple<Expression, Expression, Boolean> {
     val exp1ContainsVariable = exp1.containsVariable(varName)
     val exp2ContainsVariable = exp2.containsVariable(varName)
     return when {
-      exp1ContainsVariable && !exp2ContainsVariable -> Pair(exp1, invertOperation(right, exp2))
-      !exp1ContainsVariable && exp2ContainsVariable -> Pair(exp2, invertOperation(right, exp1))
+      exp1ContainsVariable && !exp2ContainsVariable -> Triple(exp1, invertOperation(right, exp2), false)
+      !exp1ContainsVariable && exp2ContainsVariable -> Triple(exp2, invertOperation(right, exp1), false)
       exp1ContainsVariable && exp2ContainsVariable -> throw RuntimeException("Variable $varName existiert rechts und links im Baum")
       else -> throw VariableNotFoundException(varName)
     }
   }
 
   protected abstract fun invertOperation(right: Expression, otherExp: Expression): Expression
-  protected abstract fun invertOperationVarInBothSides(otherExp: Expression): Expression
 }
 
 // ***********************************************************************************************
@@ -176,6 +195,9 @@ open class WurzelExpression(exp1: Expression) : SingleFieldExpression("WURZEL", 
   }
 
   override fun invertOperation(exp: Expression) = QuadratExpression(exp)
+  override fun flip() = false
+
+  override fun wertebereich() = Gleichung(exp1, IST_GROESSER_GLEICH, Val(0))
 }
 
 open class QuadratExpression(exp1: Expression) : SingleFieldExpression("QUADRAT", exp1) {
@@ -190,7 +212,9 @@ open class QuadratExpression(exp1: Expression) : SingleFieldExpression("QUADRAT"
     }
   }
 
+
   override fun invertOperation(exp: Expression) = WurzelExpression(exp)
+  override fun flip() = false
 }
 
 // ***********************************************************************************************
@@ -212,6 +236,7 @@ class NegExpression(exp1: Expression) : SingleFieldExpression("NEG", exp1) {
   }
 
   override fun invertOperation(exp: Expression) = NegExpression(exp)
+  override fun flip() = true
 }
 
 class KehrwertExpression(exp1: Expression) : SingleFieldExpression("KEHRWERT", exp1) {
@@ -227,6 +252,9 @@ class KehrwertExpression(exp1: Expression) : SingleFieldExpression("KEHRWERT", e
   }
 
   override fun invertOperation(exp: Expression) = KehrwertExpression(exp)
+  override fun flip() = false
+
+  override fun wertebereich() = Gleichung(exp1, IST_UNGLEICH, Val(0))
 }
 
 class PlusExpression(exp1: Expression, exp2: Expression) : TwoFieldExpression("PLUS", exp1, exp2) {
@@ -290,7 +318,6 @@ class PlusExpression(exp1: Expression, exp2: Expression) : TwoFieldExpression("P
   }
 
   override fun invertOperation(right: Expression, otherExp: Expression) = right - otherExp
-  override fun invertOperationVarInBothSides(otherExp: Expression): Expression = TODO()
 }
 
 
@@ -315,7 +342,6 @@ class MalExpression(exp1: Expression, exp2: Expression) : TwoFieldExpression("MA
   }
 
   override fun invertOperation(right: Expression, otherExp: Expression) = right / otherExp
-  override fun invertOperationVarInBothSides(otherExp: Expression): Expression = TODO()
 }
 
 

@@ -1,5 +1,6 @@
 package de.mabe.cadaster.expression
 
+import de.mabe.cadaster.expression.Gleichheit.IST_GLEICH
 import de.mabe.cadaster.util.indentBy
 
 
@@ -9,6 +10,20 @@ import de.mabe.cadaster.util.indentBy
 fun main(args: Array<String>) {
 
   println("-------------------------------------")
+  println("--------- GLEICHUNGSYSTEME ----------")
+  gleichungssysteme.forEach {
+    println("-------------------------------------")
+    it.solve()
+//    println("              simple: " + it.simplify())
+//    println("      variable-count: " + it.variableCount())
+//    println("         solve for x: " + it.loese_auf_nach("x"))
+//    println("               graph: \n" + it.toGraph().indentBy(20))
+//    println("               graph: \n" + it.simplify().toGraph().indentBy(20))
+  }
+
+
+  if (Math.random() < 2) return
+  println("-------------------------------------")
   println("------------ GLEICHUNGEN ------------")
   gleichungen.forEach {
     println("-------------------------------------")
@@ -16,7 +31,9 @@ fun main(args: Array<String>) {
     println()
     println("              simple: " + it.simplify())
     println("      variable-count: " + it.variableCount())
-    println("         solve for x: " + it.solveFor("x"))
+    println("         solve for x: " + it.loese_auf_nach("x"))
+    println("               graph: \n" + it.toGraph().indentBy(20))
+    println("               graph: \n" + it.simplify().toGraph().indentBy(20))
   }
 
   println()
@@ -28,7 +45,7 @@ fun main(args: Array<String>) {
     println()
     println("              simple: " + it.simplify())
     println("      variable-count: " + it.variableCount())
-    println("         solve for x: " + Gleichung(it, Val(0)).solveFor("x"))
+    println("         solve for x: " + Gleichung(it, IST_GLEICH, Val(0)).loese_auf_nach("x"))
     println("               graph: \n" + it.toGraph().indentBy(20))
     println("               graph: \n" + it.simplify().toGraph().indentBy(20))
   }
@@ -42,6 +59,23 @@ val x1 = Var("x1")
 val y2 = Var("y2")
 val y1 = Var("y1")
 
+
+val gleichungssysteme = listOf(
+    Gleichungssystem(
+        Gleichung(x, IST_GLEICH, x + 14 + y),
+        Gleichung(y, IST_GLEICH, x * 3)
+    ),
+    Gleichungssystem(
+        Gleichung(Val(4), IST_GLEICH, Wurzel(x * y))
+    ),
+    Gleichungssystem(
+        Gleichung(Val(4), IST_GLEICH, Val(1) / (x + y))
+    ),
+    Gleichungssystem(
+        Gleichung(Val(4), IST_GLEICH, Val(1) / (x + y)),
+        Gleichung(Val(4), IST_GLEICH, Val(1) / (z + y + x))
+    )
+)
 
 val list = listOf(
     (Val(1.0) + Val(2.0)) - Val(1.5),
@@ -74,23 +108,28 @@ val list = listOf(
     (x + y) - ((x + y) + (x + y)) // TODO fehlender Rekursiv-Teil bei Plus-Assoziativ
 )
 
+val DEBUG = false
+
+fun debug(string: String) {
+  if (DEBUG) println("DEBUG  " + string)
+}
 
 val gleichungen = listOf(
+    Gleichung(x + 12, IST_GLEICH, x * 13),
     Gleichung(
-        left = x + 12,
-        right = x * 13
+        (Val(12) + 23) * 12,
+        IST_GLEICH,
+        (x * 13) - (Val(12) / 4)
     ),
     Gleichung(
-        left = (Val(12) + 23) * 12,
-        right = (x * 13) - (Val(12) / 4)
+        (y + 23) * 12,
+        IST_GLEICH,
+        (x * 13) - (Val(12) / 4)
     ),
     Gleichung(
-        left = (y + 23) * 12,
-        right = (x * 13) - (Val(12) / 4)
-    ),
-    Gleichung(
-        left = x + 4,
-        right = x * 0
+        x + 4,
+        IST_GLEICH,
+        x * 0
     )
 )
 

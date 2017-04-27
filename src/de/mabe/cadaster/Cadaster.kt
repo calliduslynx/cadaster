@@ -1,6 +1,7 @@
 package de.mabe.cadaster
 
 import de.mabe.cadaster.PValueType.exactly
+import de.mabe.cadaster.expression.Gleichheit.IST_GLEICH
 import de.mabe.cadaster.expression.Gleichung
 import de.mabe.cadaster.expression.VariableCount
 
@@ -40,10 +41,10 @@ class Cadaster {
 
     // **************************
 
-    println(gleichungen.map { it.solveFor("P1.x") }.toListString())
-    val gl = Gleichung(gleichungen[0].right, gleichungen[1].right)
+    println(gleichungen.map { it.loese_auf_nach("P1.x") }.toListString())
+    val gl = Gleichung(gleichungen[0].right, IST_GLEICH, gleichungen[1].right)
     println(gl.simplify())
-    val gl2 = gl.solveFor("P1.x")
+    val gl2 = gl.loese_auf_nach("P1.x")
     println(gl2)
 
 
