@@ -14,96 +14,104 @@ class Gleichungssystem(vararg gleichungen: Gleichung) {
     val vc_initial = gleichungen.fold(VariableCount(), { vc, gl -> gl.variableCount(vc) })
     println(" > var-counts: " + vc_initial)
 
+    fun erzeugeGleichungenUmgestelltNachVar(list: List<Gleichung>) = vc_initial.map { vc ->
+      val varName = vc.key
+
+      list.map {
+        val solveResult = it.loese_auf_nach(varName)
+        when (solveResult) {
+          is ErfolgreicheUmstellung -> solveResult.gleichung
+          is VariableNichtRelevant -> {
+            debug("            .. Variable '$varName' not relevant : $it")
+            null
+          }
+          is UmstellungNichtErfolgreich -> {
+            println("            !! Unable to Solve for '$varName' : $it")
+            null
+          }
+        }
+      }.filterNotNull()
+    }.flatten()
+
+
     gleichungen.forEach { it.simplify() }
 
     val gleichungenAusWertebereich: List<Gleichung> = gleichungen.map { it.left.wertebereiche() + it.right.wertebereiche() }.flatten()
     println(" > gleichungen aus Wertebereich: ${gleichungenAusWertebereich.size}\n" + gleichungenAusWertebereich.joinToString("\n").indentBy(10))
 
-    gleichungen += gleichungenAusWertebereich
 
-    val gleichungenProVariable: Map<String, List<Gleichung>> = vc_initial.map { vc ->
-      val varName = vc.key
-      Pair(
-          varName,
-          gleichungen.map {
-            val solveResult = it.loese_auf_nach(varName)
-            when (solveResult) {
-              is ErfolgreicheUmstellung -> solveResult.gleichung
-              is VariableNichtRelevant -> {
-                println("  .. Variable '$varName' not relevant : $it")
-                null
-              }
-              is UmstellungNichtErfolgreich -> {
-                println("  !! Unable to Solve for '$varName' : $it")
-                null
-              }
-            }
-          }.filterNotNull()
-      )
-    }.toMap()
+    val alleBekanntenGleichungen = ArrayList<Gleichung>()
+    alleBekanntenGleichungen.addAll(gleichungen + gleichungenAusWertebereich)
 
-    println(" > gleichungen pro variable:")
-    gleichungenProVariable.forEach { varName, list ->
-      println("   > Variable: " + varName)
-      list.forEachIndexed { i, it -> println("    [$i] $it") }
-    }
+    val alleBekanntenGleichungenDieUmgestelltSind = ArrayList<Gleichung>()
+    alleBekanntenGleichungenDieUmgestelltSind.addAll(erzeugeGleichungenUmgestelltNachVar(alleBekanntenGleichungen))
 
+    alleBekanntenGleichungen.addAll(alleBekanntenGleichungenDieUmgestelltSind)
+
+    println(" > alle bekannten Gleichungen:")
+    alleBekanntenGleichungen.forEach { println("        $it") }
+
+    println(" > gleichungen umgestellt nach Variablen:")
+    alleBekanntenGleichungenDieUmgestelltSind.forEach { println("        $it") }
+
+
+    var umgestellteGleichungenIndex = 0
     println(" > Substitutionen")
-    gleichungenProVariable.forEach { varName, list ->
-      // ***** Durchlauf für eine Variable
-      println("   > Substituiere für " + varName)
+    while (umgestellteGleichungenIndex < alleBekanntenGleichungenDieUmgestelltSind.size) {
+      val umgestellteGleichungZumEinsetzen = alleBekanntenGleichungenDieUmgestelltSind[umgestellteGleichungenIndex]
+      if (umgestellteGleichungZumEinsetzen.gleichheit == IST_GLEICH) {
 
-      list.filter { it.gleichheit == IST_GLEICH }
-          .forEach { gleichungFuerAktuelleVar ->
-            gleichungFuerAktuelleVar.simplify()
-          
+        println("   > Substituiere " + umgestellteGleichungZumEinsetzen)
 
+        alleBekanntenGleichungen.forEach { bekannteGleichung ->
+          debug("     > in Gleichung " + bekannteGleichung)
+          val varName = (umgestellteGleichungZumEinsetzen.left as VariableExpression).name
+          val gleichungMitErsetzung = bekannteGleichung.withValue(varName, umgestellteGleichungZumEinsetzen.right)
+
+          debug("       > mit Ersetzung: " + gleichungMitErsetzung)
+
+          val neueUmgestellteGleichungen = erzeugeGleichungenUmgestelltNachVar(listOf(gleichungMitErsetzung))
+          neueUmgestellteGleichungen.forEach {
+            val neuSimple = it.simplify()
+            debug("         > umgestellt + simple: $neuSimple     ......")
+            if (alleBekanntenGleichungenDieUmgestelltSind.contains(neuSimple)) {
+              debug("                                          -> bekannt")
+            } else {
+              debug("                                          -> neu")
+              alleBekanntenGleichungenDieUmgestelltSind.add(neuSimple)
+            }
           }
-
+        }
+      }
+      umgestellteGleichungenIndex++
     }
-    val substitutionsGleichungenProVariable = gleichungenProVariable.map { e -> Pair(e.key, e.value.filter { it.gleichheit == IST_GLEICH }) }.toMap()
 
+    println(" > Gleichungen nach Substitution")
+    alleBekanntenGleichungenDieUmgestelltSind.forEach { println("        $it") }
 
+    val variablenUndIhrWert = HashMap<String, Double>()
+    alleBekanntenGleichungenDieUmgestelltSind.forEach {
+      if (it.gleichheit == IST_GLEICH && it.right is ValueExpression) {
+        val varName = (it.left as VariableExpression).name
+        val value = it.right.value
+        if (variablenUndIhrWert.containsKey(varName) && variablenUndIhrWert[varName] != value)
+          throw IllegalStateException("VAR '$varName' ist mal '${variablenUndIhrWert[varName]}' und mal '$value'")
+
+        variablenUndIhrWert.put(varName, value)
+      }
+    }
+
+    println(" > Ermittelte konkrete Variablen:")
+    variablenUndIhrWert.forEach { varName, value -> println("        $varName: $value") }
+
+    // TODO noch nicht ermittelte Variablen anhand ihres Wertebereichs ermitteln
+    // immer nur eine neue Variable und dann wieder einsetzen
+    
+    // TODO mit allen ermittelten Variablen alle Gleichungen testen
   }
 
   override fun toString() = gleichungen.mapIndexed { i, it -> "[$i] $it" }.joinToString("\n")
 }
-
-//fun main(args: Array<String>) {
-//  println("> load data")
-//  println("     using elements:\n" + project.elements().all().toListString())
-//  val variables = project.elements().allVariables()
-//  println("     using variables:\n" + variables.toListString())
-//  println("     using rules:\n" + project.rules().all().toListString())
-//
-//  println("> loading gleichungen")
-//  var gleichungen = project.rules().all().map { it.rule.gleichung() }
-//  println("     using gleichungen:\n" + gleichungen.toListString())
-//  println("> setze bekannte Variablen")
-//  variables.filter { it.pValue.type == exactly }.forEach { pVar ->
-//    gleichungen = gleichungen.map { gl -> gl.withValue(pVar.name, pVar.pValue.value) }
-//  }
-//  println("> simplify gleichungen")
-//  gleichungen = gleichungen.map { it.simplify() }
-//  println("     gleichungen:\n" + gleichungen.toListString())
-//  println("     missing vars (Name, Anzahl):\n" + gleichungen.variableCount().toList().toListString())
-//
-//  // **************************
-//
-//  println(gleichungen.map { it.loese_auf_nach("P1.x") }.toListString())
-//  val gl = Gleichung(gleichungen[0].right, gleichungen[1].right)
-//  println(gl.simplify())
-//  val gl2 = gl.loese_auf_nach("P1.x")
-//  println(gl2)
-//
-//
-//  // Substitution / Gleichsetzung
-//
-//
-//  // TODO Wertebereich
-//  //  -> Div durch null
-//  //  -> Wurzel nicht los
-//}
 
 
 

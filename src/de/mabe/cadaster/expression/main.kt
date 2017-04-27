@@ -62,16 +62,25 @@ val y1 = Var("y1")
 
 val gleichungssysteme = listOf(
     Gleichungssystem(
-        Gleichung(x, IST_GLEICH, x + 14 + y),
-        Gleichung(y, IST_GLEICH, x * 3)
+        Gleichung(Val(4), IST_GLEICH, x),
+        Gleichung(Val(12), IST_GLEICH, x + y)
     ),
     Gleichungssystem(
-        Gleichung(Val(4), IST_GLEICH, Wurzel(x * y))
+        Gleichung(Val(4), IST_GLEICH, x + y),
+        Gleichung(Val(12), IST_GLEICH, x - y)
     ),
     Gleichungssystem(
         Gleichung(Val(4), IST_GLEICH, Val(1) / (x + y))
     ),
     Gleichungssystem(
+        Gleichung(Val(4), IST_GLEICH, Wurzel(x * y))
+    ),
+    Gleichungssystem(
+        Gleichung(x, IST_GLEICH, x + 14 + y),
+        Gleichung(y, IST_GLEICH, x * 3)
+    )
+    ,
+    Gleichungssystem( // LOOP
         Gleichung(Val(4), IST_GLEICH, Val(1) / (x + y)),
         Gleichung(Val(4), IST_GLEICH, Val(1) / (z + y + x))
     )
@@ -115,7 +124,8 @@ fun debug(string: String) {
 }
 
 val gleichungen = listOf(
-    Gleichung(x + 12, IST_GLEICH, x * 13),
+    Gleichung(x + 12, IST_GLEICH, x * 13)
+    ,
     Gleichung(
         (Val(12) + 23) * 12,
         IST_GLEICH,

@@ -19,6 +19,8 @@ class Tests {
   @Test fun exp_eq_008() = exp_eq(f, x + 1, x + 2)
   @Test fun exp_eq_009() = exp_eq(f, x, y)
   @Test fun exp_eq_010() = exp_eq(f, -Val(10), Val(-10))
+  @Test fun exp_eq_011() = exp_eq(t, Val(14), Val(13.999999999999998))
+  @Test fun exp_eq_012() = exp_eq(t, Val(13), Val(13.0000000000001))
 
   @Test fun exp_gl_001() = gl_eq(t, G(x, "=", x), G(x, "=", x))
   @Test fun exp_gl_002() = gl_eq(t, G(x, "=", y), G(x, "=", y))
@@ -26,6 +28,22 @@ class Tests {
   @Test fun exp_gl_004() = gl_eq(f, G(x, "=", y), G(x, "=", x))
 
   @Test fun simp_001() = simp(Val(12), Val(14) - 2)
+  @Test fun simp_002() = simp(Val(0), x - (Val(1) - (Val(1) - x)))
+  @Test fun simp_003() = simp(x * 2, x + x)
+  @Test fun simp_004() = simp(x * 7, (x * 3) + (x * 4))
+  @Test fun simp_005() = simp(x, (x * 2) + -x)
+  @Test fun simp_006() = simp(x * 10 + 10, x + x + x + x + x + x + x + x + x + x + 10)
+  @Test fun simp_007() = simp(x, Neg(Neg(x)))
+  @Test fun simp_008() = simp(x + 1, Neg(Neg(x)) + 1)
+  @Test fun simp_009() = simp(x + 1, Kehrwert(Kehrwert(x)) + 1)
+  @Test fun simp_010() = simp(x + 1, Quadrat(Wurzel(x)) + 1)
+  @Test fun simp_011() = simp(x + 1, Wurzel(Quadrat(x)) + 1)
+  @Test fun simp_012() = simp(x * 6, (Val(3) * x) + (Val(3) * x))
+  @Test fun simp_013() = simp(x, (x * -3) + (x * 4))
+  @Test fun simp_014() = simp(-x + -y, -(x + y))
+  @Test fun simp_015() = simp(-x * y, -(x * y))
+  @Test fun simp_016() = simp(Val(16), Val(16) / y * y)
+  @Test fun simp_017() = simp(Val(4), Wurzel(Val(16) / y * y))
 
   @Test fun exp_withVal_001() = withExpVal(Val(10), Val(2), x + 8)
 
@@ -122,6 +140,13 @@ class Tests {
 
   private fun simp(expSimple: Expression, exp: Expression) {
     println("EXPRESSION '$exp' soll simple aussehen: '$expSimple'")
-    assertEquals(expSimple, exp.simplify())
+
+    if (DEBUG) println("--- original")
+    if (DEBUG) println(exp.toGraph())
+    val simple = exp.simplify()
+    if (DEBUG) println("--- simple")
+    if (DEBUG) println(simple.toGraph())
+
+    assertEquals(expSimple, simple)
   }
 }

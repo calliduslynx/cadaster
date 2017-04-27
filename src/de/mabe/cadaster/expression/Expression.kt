@@ -113,19 +113,32 @@ sealed class Expression(val stringForGraph: String) {
     if (other !is Expression) return false
     if (javaClass != other.javaClass) return false
 
-    if (this is VariableExpression) return this.name == (other as VariableExpression).name
-    if (this is ValueExpression) return this.value == (other as ValueExpression).value
+    when (this) {
+      is VariableExpression -> return this.name == (other as VariableExpression).name
+      is ValueExpression -> {
+        fun Double.round(digits: Int): Double {
+          val multiplier = Math.pow(10.0, digits.toDouble())
+          return Math.round(this * multiplier) / multiplier
+        }
 
-    val tC = children()
-    val oC = other.children()
+        val val1 = value.round(8)
+        val val2 = (other as ValueExpression).value.round(8)
 
-    if (tC.size != oC.size) return false
+        return val1 == val2
+      }
+      else -> {
+        val tC = children()
+        val oC = other.children()
 
-    if (tC.size == 1) {
-      return tC[0] == oC[0]
-    } else {
-      return (tC[0] == oC[0] && tC[1] == oC[1]) ||
-          (tC[0] == oC[1] && tC[1] == oC[0])
+        if (tC.size != oC.size) return false
+
+        if (tC.size == 1) {
+          return tC[0] == oC[0]
+        } else {
+          return (tC[0] == oC[0] && tC[1] == oC[1]) ||
+              (tC[0] == oC[1] && tC[1] == oC[0])
+        }
+      }
     }
   }
 }
@@ -226,12 +239,12 @@ class NegExpression(exp1: Expression) : SingleFieldExpression("NEG", exp1) {
   override fun simplify(): Expression {
     val simpleChild = exp1.simplify()
 
-    if (simpleChild is ValueExpression && simpleChild.value == 0.0) return Val(0) // FIXME: ... 
-
     return when (simpleChild) {
       is ValueExpression -> ValueExpression(-simpleChild.value)
       is NegExpression -> simpleChild.exp1
-      else -> NegExpression(exp1.simplify())
+      is MalExpression -> (-simpleChild.exp1 * simpleChild.exp2).simplify()
+      is PlusExpression -> (-simpleChild.exp1 + -simpleChild.exp2).simplify()
+      else -> NegExpression(simpleChild)
     }
   }
 
@@ -270,54 +283,84 @@ class PlusExpression(exp1: Expression, exp2: Expression) : TwoFieldExpression("P
       simpleChild2 is ValueExpression && simpleChild2.value == 0.0 -> simpleChild1
       simpleChild1 is NegExpression && simpleChild1.exp1 == simpleChild2 -> Val(0)
       simpleChild2 is NegExpression && simpleChild2.exp1 == simpleChild1 -> Val(0)
-      else ->
+      else -> {
         if (useAssoziativ) {
-          // Assoziativ-Gesetz
-          val variableCount = HashMap<String, Double>()
-          fun HashMap<String, Double>.increment(valName: String, value: Double) {
-            this[valName] = this.getOrPut(valName, { 0.0 }) + value
-          }
-
-          val otherExp = mutableListOf<Expression>()
-          var sum = 0.0
-
-
-          fun traverse(exp1: Expression, exp2: Expression? = null) {
-            val isNeg = exp1 is NegExpression
-            val e = if (isNeg) (exp1 as NegExpression).exp1 else exp1
-
-            when (e) {
-              is ValueExpression -> sum += if (isNeg) -e.value else e.value
-              is VariableExpression -> variableCount.increment(e.name, if (isNeg) -1.0 else 1.0)
-              is PlusExpression -> if (!isNeg) traverse((exp1 as PlusExpression).exp1, exp1.exp2) else otherExp.add(exp1)
-              is MalExpression -> {
-                if (e.exp1 is VariableExpression && e.exp2 is ValueExpression)
-                  variableCount.increment(e.exp1.name, if (isNeg) -e.exp2.value else e.exp2.value)
-                else if (e.exp2 is VariableExpression && e.exp1 is ValueExpression)
-                  variableCount.increment(e.exp2.name, if (isNeg) -e.exp1.value else e.exp1.value)
-                else
-                  otherExp.add(exp1)
-              }
-              else -> otherExp.add(exp1)
-            }
-            if (exp2 != null) traverse(exp2)
-          }
-
-          traverse(this)
-
-          var curr: Expression = Val(sum)
-          variableCount.forEach { varName, count ->
-            curr = curr + (Var(varName) * count)
-          }
-          otherExp.forEach { curr = curr + it }
-          return if (curr is PlusExpression) (curr as PlusExpression).simplify(false) else curr.simplify()
+          val expressions = wendeAssoziativGesetzAufPlusAn(this).expressions()
+          var curr = expressions[0]
+          expressions.forEachIndexed { i, exp -> if (i > 0) curr += exp }
+          return if (curr is PlusExpression) curr.simplify(false) else curr.simplify()
         } else {
-          Plus(simpleChild1, simpleChild2)
+          simpleChild1 + simpleChild2
         }
+      }
     }
   }
 
   override fun invertOperation(right: Expression, otherExp: Expression) = right - otherExp
+}
+
+private val VALUES = "###VALS###"
+
+private class Counts {
+  private val internal = HashMap<String, Double>()
+  private var others = ArrayList<Expression>()
+
+  fun increment(valName: String, value: Double, invert: Boolean = false) {
+    val valueTo = if (invert) -value else value
+    internal[valName] = internal.getOrPut(valName, { 0.0 }) + valueTo
+  }
+
+  fun addOther(exp: Expression) = others.add(exp)
+
+  fun add(counts: Counts): Unit {
+    counts.others.forEach { addOther(it) }
+    counts.internal.forEach { increment(it.key, it.value) }
+  }
+
+  fun expressions(): List<Expression> {
+    val list = ArrayList<Expression>()
+    list.addAll(others)
+    internal.forEach { varName, value -> list.add(if (varName == VALUES) Val(value) else Var(varName) * value) }
+    return list
+  }
+
+  fun invert(): Counts {
+    internal.forEach { varName, value -> internal[varName] = -value }
+    others = ArrayList(others.map { -it })
+    return this
+  }
+
+}
+
+private fun wendeAssoziativGesetzAufPlusAn(exp: Expression): Counts {
+  val counts = Counts()
+
+  when (exp) {
+    is ValueExpression -> counts.increment(VALUES, exp.value)
+    is VariableExpression -> counts.increment(exp.name, 1.0)
+    is NegExpression -> counts.add(wendeAssoziativGesetzAufPlusAn(exp.exp1).invert())
+    is PlusExpression -> {
+      counts.add(wendeAssoziativGesetzAufPlusAn(exp.exp1))
+      counts.add(wendeAssoziativGesetzAufPlusAn(exp.exp2))
+    }
+    is MalExpression -> {
+      var e1 = exp.exp1.simplify()
+      var e2 = exp.exp2.simplify()
+      val invert = (e1 is NegExpression) xor (e2 is NegExpression)
+
+      if (e1 is NegExpression) e1 = e1.exp1
+      if (e2 is NegExpression) e2 = e2.exp1
+
+      if (e1 is VariableExpression && e2 is ValueExpression)
+        counts.increment(e1.name, e2.value, invert)
+      else if (e2 is VariableExpression && e1 is ValueExpression)
+        counts.increment(e2.name, e1.value, invert)
+      else
+        counts.addOther(exp)
+    }
+    else -> counts.addOther(exp)
+  }
+  return counts
 }
 
 
