@@ -42,11 +42,15 @@ class Tests {
   @Test fun simp_013() = simp(x, (x * -3) + (x * 4))
   @Test fun simp_014() = simp(-x + -y, -(x + y))
   @Test fun simp_015() = simp(-x * y, -(x * y))
-  @Test fun simp_016_f() = simp(Val(16), Val(16) / y * y)
-  @Test fun simp_017_f() = simp(Val(4), Wurzel(Val(16) / y * y))
+  @Test fun simp_016() = simp(Val(16), Val(16) / y * y)
+  @Test fun simp_017() = simp(Val(4), Wurzel(Val(16) / y * y))
   @Test fun simp_018() = simp(y * 0.5 + Val(-0.5), (y - 1) * 0.5)
   @Test fun simp_019() = simp(Quadrat(x + 1), (x + 1) * (x + 1))
   @Test fun simp_020() = simp(Val(24) * Quadrat(x) * y, x * 2 * y * 3 * x * 4)
+  @Test fun simp_021_f() = simp(x, (Quadrat(4) / y) - (Quadrat(4) / x))
+  @Test fun simp_022_f() = simp(x, (Quadrat(4) / y) - (Quadrat(4) / y))
+  @Test fun simp_023() = simp(Val(16) / y, Quadrat(4) / y)
+  @Test fun simp_024_f() = simp(Val(0), (Val(16) / x) - (Val(16) / x))
 
   @Test fun exp_withVal_001() = withExpVal(Val(10), Val(2), x + 8)
 
@@ -66,6 +70,7 @@ class Tests {
   @Test fun umst_014() = umst(G(x, ">", Val(0)), G(-x, "<", Val(0)))
   @Test fun umst_015() = umst(G(x, ">=", Val(0)), G(-x, "<=", -Val(0)))
   @Test fun umst_016() = umstNR(G(x, "=", x + 14 + y))
+  @Test fun umst_017() = umstNR(G(Val(16) / x, "=", Val(16) / x))
 
   @Test fun gleichheit() = Gleichheit.values().forEach { println(" - ${it.name} ${it.look} flip:${it.flip.name}") }
 

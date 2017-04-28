@@ -45,7 +45,7 @@ class Gleichung(val left: Expression, val gleichheit: Gleichheit, val right: Exp
   fun simplify() = Gleichung(left.simplify(), gleichheit, right.simplify())
   fun variableCount(variableCount: VariableCount = VariableCount()): VariableCount = left.variableCount(right.variableCount(variableCount))
   fun withValue(varName: String, value: Int) = withValue(varName, value.toDouble())
-  fun withValue(varName: String, value: Double) = withValue(varName, Val(value)) 
+  fun withValue(varName: String, value: Double) = withValue(varName, Val(value))
   fun withValue(varName: String, value: Expression) = Gleichung(left.withValue(varName, value), gleichheit, right.withValue(varName, value))
   fun isCorrect(): GleichungKorrect {
     val leftValue = (left.simplify() as? ValueExpression)?.value
@@ -58,6 +58,9 @@ class Gleichung(val left: Expression, val gleichheit: Gleichheit, val right: Exp
   }
 
   fun loese_auf_nach(varName: String): UmstellungsErgebnis {
+    // **** schauen ob beides gleich ist
+    if (left.simplify() == right.simplify()) return VariableNichtRelevant(varName, Gleichung(left.simplify(), gleichheit, right.simplify()))
+
     // ***** bring var to left --- make deep copy
     val leftContainsVar = left.containsVariable(varName)
     val rightContainsVar = right.containsVariable(varName)

@@ -18,6 +18,8 @@ fun      Val(value: Double)                       = ValueExpression(value)
 fun      Val(value: Int)                          = ValueExpression(value.toDouble())
 fun   Wurzel( exp1: Expression)                   = WurzelExpression(exp1)
 fun  Quadrat( exp1: Expression)                   = QuadratExpression(exp1)
+fun  Quadrat(value: Double)                       = QuadratExpression(Val(value))
+fun  Quadrat(value: Int)                          = QuadratExpression(Val(value))
 
 fun      Neg( exp1: Expression)                   = NegExpression(exp1)
 fun Kehrwert( exp1: Expression)                   = KehrwertExpression(exp1)
@@ -487,8 +489,8 @@ private fun wendeAssoziativGesetzAufMalAn(exp: Expression, counts: MalCounts = M
       counts.add(newCounts)
     }
     is MalExpression -> {
-      wendeAssoziativGesetzAufMalAn(exp.exp1, counts)
-      wendeAssoziativGesetzAufMalAn(exp.exp2, counts)
+      wendeAssoziativGesetzAufMalAn(exp.exp1.simplify(), counts)
+      wendeAssoziativGesetzAufMalAn(exp.exp2.simplify(), counts)
     }
     else -> counts.addOther(exp)
   }

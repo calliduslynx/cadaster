@@ -65,7 +65,7 @@ val gleichungssysteme = listOf(
         Gleichung(Val(4), IST_GLEICH, x),
         Gleichung(Val(12), IST_GLEICH, x + y)
     ),
-//    Gleichungssystem(
+    //    Gleichungssystem( FIXME: LOOP
 //        Gleichung(Val(4), IST_GLEICH, x),
 //        Gleichung(Val(12), IST_GLEICH, x + y),
 //        Gleichung(Val(24), IST_GLEICH, x + y + z)
