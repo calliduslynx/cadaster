@@ -46,6 +46,7 @@ class Tests {
   @Test fun simp_017_f() = simp(Val(4), Wurzel(Val(16) / y * y))
   @Test fun simp_018() = simp(y * 0.5 + Val(-0.5), (y - 1) * 0.5)
   @Test fun simp_019() = simp(Quadrat(x + 1), (x + 1) * (x + 1))
+  @Test fun simp_020() = simp(Val(24) * Quadrat(x) * y, x * 2 * y * 3 * x * 4)
 
   @Test fun exp_withVal_001() = withExpVal(Val(10), Val(2), x + 8)
 

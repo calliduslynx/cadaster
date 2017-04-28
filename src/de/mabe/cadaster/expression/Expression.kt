@@ -269,6 +269,10 @@ class KehrwertExpression(exp1: Expression) : SingleFieldExpression("KEHRWERT", e
   override fun wertebereich() = Gleichung(exp1, IST_UNGLEICH, Val(0))
 }
 
+// ******************************************************************************************************************
+// ******************************************************************************************************************
+// ******************************************************************************************************************
+
 class PlusExpression(exp1: Expression, exp2: Expression) : TwoFieldExpression("PLUS", exp1, exp2) {
   override fun innerToString() = "${exp1.innerToString()} + ${exp2.innerToString()}".braced()
   override fun newInstance(children: List<Expression>) = PlusExpression(children[0], children[1])
@@ -300,7 +304,7 @@ class PlusExpression(exp1: Expression, exp2: Expression) : TwoFieldExpression("P
 
 private val VALUES = "###VALS###"
 
-private class Counts {
+private class PlusCounts {
   private val internal = HashMap<String, Double>()
   private var others = ArrayList<Expression>()
 
@@ -311,7 +315,7 @@ private class Counts {
 
   fun addOther(exp: Expression) = others.add(exp)
 
-  fun add(counts: Counts): Unit {
+  fun add(counts: PlusCounts): Unit {
     counts.others.forEach { addOther(it) }
     counts.internal.forEach { increment(it.key, it.value) }
   }
@@ -323,16 +327,15 @@ private class Counts {
     return list
   }
 
-  fun invert(): Counts {
+  fun invert(): PlusCounts {
     internal.forEach { varName, value -> internal[varName] = -value }
     others = ArrayList(others.map { -it })
     return this
   }
-
 }
 
-private fun wendeAssoziativGesetzAufPlusAn(exp: Expression): Counts {
-  val counts = Counts()
+private fun wendeAssoziativGesetzAufPlusAn(exp: Expression): PlusCounts {
+  val counts = PlusCounts()
 
   when (exp) {
     is ValueExpression -> counts.increment(VALUES, exp.value)
@@ -362,31 +365,134 @@ private fun wendeAssoziativGesetzAufPlusAn(exp: Expression): Counts {
   return counts
 }
 
+// ******************************************************************************************************************
+// ******************************************************************************************************************
+// ******************************************************************************************************************
 
 class MalExpression(exp1: Expression, exp2: Expression) : TwoFieldExpression("MAL", exp1, exp2) {
   override fun innerToString() = "${exp1.innerToString()} * ${exp2.innerToString()}".braced()
   override fun newInstance(children: List<Expression>) = children[0] * children[1]
-  override fun simplify(): Expression {
-    val simpleChild1 = exp1.simplify()
-    val simpleChild2 = exp2.simplify()
+  override fun simplify(): Expression = simplify(true)
+  private fun simplify(useAssoziativ: Boolean): Expression {
+    val sc1 = exp1.simplify()
+    val sc2 = exp2.simplify()
     return when {
-      simpleChild1 == simpleChild2 -> Quadrat(simpleChild1)
-      simpleChild1 is ValueExpression && simpleChild2 is ValueExpression -> Val(simpleChild1.value * simpleChild2.value)
-      simpleChild1 is ValueExpression && simpleChild1.value == 0.0 -> Val(0.0)
-      simpleChild2 is ValueExpression && simpleChild2.value == 0.0 -> Val(0.0)
-      simpleChild1 is ValueExpression && simpleChild1.value == 1.0 -> simpleChild2
-      simpleChild2 is ValueExpression && simpleChild2.value == 1.0 -> simpleChild1
-      simpleChild1 is ValueExpression && simpleChild1.value == -1.0 -> -simpleChild2
-      simpleChild2 is ValueExpression && simpleChild2.value == -1.0 -> -simpleChild1
-      simpleChild2 is KehrwertExpression && simpleChild2.exp1 == simpleChild1 -> Val(1)
-      simpleChild1 is VariableExpression && simpleChild2 is VariableExpression && simpleChild1.name == simpleChild2.name -> Quadrat(simpleChild1)
-      simpleChild1 is PlusExpression -> ((simpleChild1.exp1 * simpleChild2) + (simpleChild1.exp2 * simpleChild2)).simplify()
-      simpleChild2 is PlusExpression -> ((simpleChild1 * simpleChild2.exp1) + (simpleChild1 * simpleChild2.exp2)).simplify()
-      else -> MalExpression(simpleChild1, simpleChild2)
+      sc1 == sc2 -> Quadrat(sc1)
+      sc1 is ValueExpression && sc2 is ValueExpression -> Val(sc1.value * sc2.value)
+      sc1 is ValueExpression && sc1.value == 0.0 -> Val(0.0)
+      sc2 is ValueExpression && sc2.value == 0.0 -> Val(0.0)
+      sc1 is ValueExpression && sc1.value == 1.0 -> sc2
+      sc2 is ValueExpression && sc2.value == 1.0 -> sc1
+      sc1 is ValueExpression && sc1.value == -1.0 -> -sc2
+      sc2 is ValueExpression && sc2.value == -1.0 -> -sc1
+      sc2 is KehrwertExpression && sc2.exp1 == sc1 -> Val(1)
+      sc1 is VariableExpression && sc2 is VariableExpression && sc1.name == sc2.name -> Quadrat(sc1)
+      sc1 is ValueExpression && sc2 is VariableExpression -> sc1 * sc2
+      sc1 is VariableExpression && sc2 is ValueExpression -> sc2 * sc1
+      sc1 is PlusExpression -> ((sc1.exp1 * sc2) + (sc1.exp2 * sc2)).simplify()
+      sc2 is PlusExpression -> ((sc1 * sc2.exp1) + (sc1 * sc2.exp2)).simplify()
+      else -> {
+        if (useAssoziativ) {
+          val expressions = wendeAssoziativGesetzAufMalAn(this).expressions()
+          var curr = expressions[0]
+          expressions.forEachIndexed { i, exp -> if (i > 0) curr *= exp }
+          return if (curr is MalExpression) curr else curr.simplify()
+        } else {
+          MalExpression(sc1, sc2).simplify(false)
+        }
+      }
     }
   }
 
   override fun invertOperation(right: Expression, otherExp: Expression) = right / otherExp
+}
+
+private class MalCounts {
+  private var inverted: Boolean = false
+  private var value: Double = 1.0
+  private val variableAndPotenz = HashMap<String, Int>()
+  private var others = ArrayList<Expression>()
+
+
+  fun addOther(exp: Expression) = others.add(exp)
+  fun multiplyValue(value: Double) {
+    this.value *= value
+  }
+
+  fun incVarPotenz(varName: String, value: Int = 1) {
+    variableAndPotenz[varName] = variableAndPotenz.getOrPut(varName, { 0 }) + value
+  }
+
+  fun invert() {
+    inverted = !inverted
+  }
+
+  fun expressions(): List<Expression> {
+    val list = ArrayList<Expression>()
+    if (value < 0) {
+      invert()
+      value = -value
+    }
+    if (value != 1.0) list.add(Val(value))
+
+    list.addAll(others)
+
+    variableAndPotenz.forEach { varName, potenz ->
+      when (potenz) {
+        0 -> Unit
+        2 -> list.add(Quadrat(Var(varName)))
+        else -> {
+          val isNeg = potenz < 0
+          val absPotenz = if (isNeg) -potenz else potenz
+
+          var curr: Expression = Var(varName)
+          repeat(absPotenz - 1) { curr *= Var(varName) }
+
+          list.add(if (isNeg) Kehrwert(curr) else curr)
+        }
+      }
+    }
+
+    if (inverted) list[0] = Neg(list[0]).simplify()
+    return list
+  }
+
+  fun flip() {
+    value = 1 / value
+    others = ArrayList(others.map { Kehrwert(it) })
+    variableAndPotenz.forEach { varName, value -> variableAndPotenz[varName] = -value }
+  }
+
+  fun add(newCounts: MalCounts) {
+    value *= newCounts.value
+    others.addAll(newCounts.others)
+    if (newCounts.inverted) invert()
+    newCounts.variableAndPotenz.forEach { varName, value ->
+      incVarPotenz(varName, value)
+    }
+  }
+}
+
+private fun wendeAssoziativGesetzAufMalAn(exp: Expression, counts: MalCounts = MalCounts()): MalCounts {
+  when (exp) {
+    is ValueExpression -> counts.multiplyValue(exp.value)
+    is VariableExpression -> counts.incVarPotenz(exp.name)
+    is NegExpression -> {
+      counts.invert()
+      wendeAssoziativGesetzAufMalAn(exp.exp1, counts)
+    }
+    is KehrwertExpression -> {
+      val newCounts = wendeAssoziativGesetzAufMalAn(exp.exp1)
+      newCounts.flip()
+      counts.add(newCounts)
+    }
+    is MalExpression -> {
+      wendeAssoziativGesetzAufMalAn(exp.exp1, counts)
+      wendeAssoziativGesetzAufMalAn(exp.exp2, counts)
+    }
+    else -> counts.addOther(exp)
+  }
+  return counts
 }
 
 
