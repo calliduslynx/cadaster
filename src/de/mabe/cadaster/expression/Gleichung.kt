@@ -9,8 +9,8 @@ enum class GleichungKorrect { KORREKT, NICHT_KORREKT, MGLWEISE }
 
 sealed class UmstellungsErgebnis
 
-class ErfolgreicheUmstellung(val gleichung: Gleichung) : UmstellungsErgebnis() {
-  override fun toString() = "SOLVED: $gleichung"
+class ErfolgreicheUmstellung(val gleichungen: List<Gleichung>) : UmstellungsErgebnis() {
+  override fun toString() = "SOLVED: $gleichungen"
 }
 
 class UmstellungNichtErfolgreich(val message: String) : UmstellungsErgebnis() {
@@ -101,16 +101,37 @@ class Gleichung(val left: Expression, val gleichheit: Gleichheit, val right: Exp
       return VariableNichtRelevant(varName, Gleichung(tmpLeft, gleichheit, tmpRight))
     }
 
+    /** Pair( flip Zeichen | right Expression ) */
+    var tmpRightList = listOf(Pair(false, tmpRight))
     try {
       while (tmpLeft !is VariableExpression) {
         val aufloesungsErgebnis = tmpLeft.loese_auf(varName)
         tmpLeft = aufloesungsErgebnis.newLeft
-        tmpRight = aufloesungsErgebnis.aenderungDerRechtenSeiteList[0].rightSideManipulationMethod.invoke(tmpRight)
-        if (aufloesungsErgebnis.aenderungDerRechtenSeiteList[0].flipGleichheit) tmpGleichheit = tmpGleichheit.flip
-        if (aufloesungsErgebnis.aenderungDerRechtenSeiteList.size > 1) println("ERROR --> zweites Ergebnis ignoriert")
+
+        val newTmpRightList = mutableListOf<Pair<Boolean, Expression>>()
+
+        aufloesungsErgebnis.aenderungDerRechtenSeiteList.forEach { aenderungDerRechtenSeite ->
+          tmpRightList.forEach { (prevFlip, prevRight) ->
+            newTmpRightList.add(
+                Pair(
+                    if (aenderungDerRechtenSeite.flipGleichheit) !prevFlip else prevFlip,
+                    aenderungDerRechtenSeite.rightSideManipulationMethod.invoke(prevRight)
+                )
+            )
+          }
+        }
+
+        tmpRightList = newTmpRightList.distinct()
       }
-      tmpRight = tmpRight.simplify()
-      return ErfolgreicheUmstellung(Gleichung(tmpLeft, tmpGleichheit, tmpRight))
+
+      return ErfolgreicheUmstellung(
+          tmpRightList.map {
+            Gleichung(tmpLeft,
+                if (it.first) tmpGleichheit.flip else tmpGleichheit,
+                it.second.simplify())
+          }
+
+      )
     } catch (e: Exception) {
       return UmstellungNichtErfolgreich(e.message ?: "Keine Nachricht")
     }

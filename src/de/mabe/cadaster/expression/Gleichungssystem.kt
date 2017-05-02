@@ -22,7 +22,7 @@ class Gleichungssystem(vararg gleichungen: Gleichung) {
   private fun erzeugeGleichungenUmgestelltNachVar(gleichung: Gleichung) = variablen.map { varName ->
     val solveResult = gleichung.loese_auf_nach(varName)
     when (solveResult) {
-      is ErfolgreicheUmstellung -> solveResult.gleichung
+      is ErfolgreicheUmstellung -> solveResult.gleichungen
       is VariableNichtRelevant -> {
         debug("            .. Variable '$varName' not relevant : $gleichung")
         null
@@ -51,24 +51,24 @@ class Gleichungssystem(vararg gleichungen: Gleichung) {
     val umgestellteGleichungen = gleichungen.map { erzeugeGleichungenUmgestelltNachVar(it) }.flatten().toMutableList()
 
     println("> Versuche einfache Umstellung")
-    while (true) {
-      val numberOfFoundVariables = result.numberOfSolvedVariables
-      println(umgestellteGleichungen.print())
-
-      println(">> identifiziere gelöse Variablen")
-      umgestellteGleichungen.map { it.getLoesung() }.filterNotNull().forEach { result.setVariable(it.first, it.second) }
-      println("  " + result)
-      if (numberOfFoundVariables == result.numberOfSolvedVariables) break
-
-      println(">> entferne unscharfte Gleichungen")
-      umgestellteGleichungen.removeIf { result.contains((it.left as VariableExpression).name) }
-      println(">> setze bekannte Variablen")
-      umgestellteGleichungen.replaceAll { gleichung ->
-        var gl = gleichung
-        result.map.forEach { varName, value -> gl = gleichung.withValue(varName, value) }
-        gl.simplify()
-      }
-    }
+//    while (true) {
+//      val numberOfFoundVariables = result.numberOfSolvedVariables
+//      println(umgestellteGleichungen.print())
+//
+//      println(">> identifiziere gelöse Variablen")
+//      umgestellteGleichungen.map { it.getLoesung() }.filterNotNull().forEach { result.setVariable(it.first, it.second) }
+//      println("  " + result)
+//      if (numberOfFoundVariables == result.numberOfSolvedVariables) break
+//
+//      println(">> entferne unscharfte Gleichungen")
+//      umgestellteGleichungen.removeIf { result.contains((it.left as VariableExpression).name) }
+//      println(">> setze bekannte Variablen")
+//      umgestellteGleichungen.replaceAll { gleichung ->
+//        var gl = gleichung
+//        result.map.forEach { varName, value -> gl = gleichung.withValue(varName, value) }
+//        gl.simplify()
+//      }
+//    }
 
   }
 //    val gleichungenAusWertebereich: List<Gleichung> = gleichungen.map { it.left.wertebereiche() + it.right.wertebereiche() }.flatten()

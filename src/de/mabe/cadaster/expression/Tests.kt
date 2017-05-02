@@ -27,52 +27,55 @@ class Tests {
   @Test fun gl_eq_003() = gl_eq(t, G(x, "=", y), G(y, "=", x))
   @Test fun gl_eq_004() = gl_eq(f, G(x, "=", y), G(x, "=", x))
 
-  @Test fun simp_001() = simp(Val(12), Val(14) - 2)
-  @Test fun simp_002() = simp(Val(0), x - (Val(1) - (Val(1) - x)))
-  @Test fun simp_003() = simp(x * 2, x + x)
-  @Test fun simp_004() = simp(x * 7, (x * 3) + (x * 4))
-  @Test fun simp_005() = simp(x, (x * 2) + -x)
-  @Test fun simp_006() = simp(x * 10 + 10, x + x + x + x + x + x + x + x + x + x + 10)
-  @Test fun simp_007() = simp(x, Neg(Neg(x)))
-  @Test fun simp_008() = simp(x + 1, Neg(Neg(x)) + 1)
-  @Test fun simp_009() = simp(x + 1, Kehrwert(Kehrwert(x)) + 1)
-  @Test fun simp_010() = simp(x + 1, Quadrat(Wurzel(x)) + 1)
-  @Test fun simp_011() = simp(x + 1, Wurzel(Quadrat(x)) + 1)
-  @Test fun simp_012() = simp(x * 6, (Val(3) * x) + (Val(3) * x))
-  @Test fun simp_013() = simp(x, (x * -3) + (x * 4))
-  @Test fun simp_014() = simp(-x + -y, -(x + y))
-  @Test fun simp_015() = simp(-x * y, -(x * y))
-  @Test fun simp_016() = simp(Val(16), Val(16) / y * y)
-  @Test fun simp_017() = simp(Val(4), Wurzel(Val(16) / y * y))
-  @Test fun simp_018() = simp(y * 0.5 + Val(-0.5), (y - 1) * 0.5)
-  @Test fun simp_019() = simp(Quadrat(x + 1), (x + 1) * (x + 1))
-  @Test fun simp_020() = simp(Val(24) * Quadrat(x) * y, x * 2 * y * 3 * x * 4)
-  @Test fun simp_021_f() = simp(x, (Quadrat(4) / y) - (Quadrat(4) / x))
-  @Test fun simp_022_f() = simp(x, (Quadrat(4) / y) - (Quadrat(4) / y))
-  @Test fun simp_023() = simp(Val(16) / y, Quadrat(4) / y)
-  @Test fun simp_024_f() = simp(Val(0), (Val(16) / x) - (Val(16) / x))
-  @Test fun simp_024() = simp(-x - y, (x + y) - ((x + y) + (x + y)))
-
+  //@formatter:off
+  @Test fun simp_001()   = Val(14) - 2                          isSimple  Val(12)  
+  @Test fun simp_002()   = x - (Val(1) - (Val(1) - x))          isSimple  Val(0)
+  @Test fun simp_003()   = x + x                                isSimple  x * 2
+  @Test fun simp_004()   = (x * 3) + (x * 4)                    isSimple  x * 7
+  @Test fun simp_005()   = (x * 2) + -x                         isSimple  x
+  @Test fun simp_006()   = x + x + x + x + x + x + x + x  + 10  isSimple  x * 8 + 10
+  @Test fun simp_007()   = Neg(Neg(x))                          isSimple  x
+  @Test fun simp_008()   = Neg(Neg(x)) + 1                      isSimple  x + 1
+  @Test fun simp_009()   = Kehrwert(Kehrwert(x)) + 1            isSimple  x + 1
+  @Test fun simp_010()   = Quadrat(Wurzel(x)) + 1               isSimple  x + 1
+  @Test fun simp_011()   = Wurzel(Quadrat(x)) + 1               isSimple  x + 1
+  @Test fun simp_012()   = (Val(3) * x) + (Val(3) * x)          isSimple  x * 6
+  @Test fun simp_013()   = (x * -3) + (x * 4)                   isSimple  x
+  @Test fun simp_014()   = -(x + y)                             isSimple  -x + -y
+  @Test fun simp_015()   = -(x * y)                             isSimple  -x * y
+  @Test fun simp_016()   = Val(16) / y * y                      isSimple  Val(16)
+  @Test fun simp_017()   = Wurzel(Val(16) / y * y)              isSimple  Val(4)
+  @Test fun simp_018()   = (y - 1) * 0.5                        isSimple  y * 0.5 + Val(-0.5) 
+  @Test fun simp_019()   = (x + 1) * (x + 1)                    isSimple  Quadrat(x + 1)
+  @Test fun simp_020()   = x * 2 * y * 3 * x * 4                isSimple  Val(24) * Quadrat(x) * y
+  @Test fun simp_021_f() = (Quadrat(4) / y) - (Quadrat(4) / x)  isSimple  x
+  @Test fun simp_022_f() = (Quadrat(4) / y) - (Quadrat(4) / y)  isSimple  x
+  @Test fun simp_023()   = Quadrat(4) / y                       isSimple  Val(16) / y
+  @Test fun simp_024_f() = (Val(16) / x) - (Val(16) / x)        isSimple  Val(0)
+  @Test fun simp_024()   = (x + y) - ((x + y) + (x + y))        isSimple  -x - y
+  
   @Test fun exp_withVal_001() = withExpVal(Val(10), Val(2), x + 8)
 
-  @Test fun umst_001() = umst(Val(12), G(x, "=", 12))
-  @Test fun umst_002() = umst(Val(9), G(x, "=", Val(12) - 3))
-  @Test fun umst_003() = umst(Val(1), G(0, "=", x + x + x + x + x + x + x + x + x + x - 10))
-  @Test fun umst_004() = umst(Val(-1), G(0, "=", x + x + x + x + x + x + x + x + x + x + 10))
-  @Test fun umst_005() = umst(G(x, "=", -1), G(0, "=", x + x + x + x + x + x + x + x + x + x + 10))
-  @Test fun umst_006() = umst(G(x, ">", 10), G(0, "<", x - 10))
-  @Test fun umst_007() = umst(G(x, "<", 10), G(0, "<", Val(10) - x))
-  @Test fun umst_008() = umst(G(x, "<", 0), G(0, "<", -x))
-  @Test fun umst_009() = umst(G(x, "<=", 0), G(0, "<=", -x))
-  @Test fun umst_010() = umst(G(x, ">", 0), G(0, ">", -x))
-  @Test fun umst_011() = umst(G(x, ">=", 0), G(0, ">=", -x))
-  @Test fun umst_012() = umst(G(x, "<", 0), G(-x, ">", Val(0)))
-  @Test fun umst_013() = umst(G(x, "<=", 0), G(-x, ">=", Val(0)))
-  @Test fun umst_014() = umst(G(x, ">", 0), G(-x, "<", Val(0)))
-  @Test fun umst_015() = umst(G(x, ">=", 0), G(-x, "<=", -Val(0)))
-  @Test fun umst_016() = umstNR(G(x, "=", x + 14 + y))
-  @Test fun umst_017() = umstNR(G(Val(16) / x, "=", Val(16) / x))
-  @Test fun umst_018() = umst(G(x, "=", 2), G(Quadrat(x), "=", 4)) // FIXME: falsch
+  @Test fun umst_001()   = G(x, "=", 12)                                          isSolvedByX  G(x, "=" , 12)
+  @Test fun umst_002()   = G(x, "=", Val(12) - 3)                                 isSolvedByX  G(x, "=" ,  9)
+  @Test fun umst_003()   = G(0, "=", x + x + x + x + x + x + x + x + x + x - 10)  isSolvedByX  G(x, "=",   1)
+  @Test fun umst_004()   = G(0, "=", x + x + x + x + x + x + x + x + x + x + 10)  isSolvedByX  G(x, "=" , -1)
+  @Test fun umst_005()   = G(0, "=", x + x + x + x + x + x + x + x + x + x + 10)  isSolvedByX  G(x, "=" , -1)
+  @Test fun umst_006()   = G(0, "<", x - 10)                                      isSolvedByX  G(x, ">" , 10)
+  @Test fun umst_007()   = G(0, "<", Val(10) - x)                                 isSolvedByX  G(x, "<" , 10)
+  @Test fun umst_008()   = G(0, "<", -x)                                          isSolvedByX  G(x, "<" ,  0)
+  @Test fun umst_009()   = G(0, "<=", -x)                                         isSolvedByX  G(x, "<=",  0)
+  @Test fun umst_010()   = G(0, ">", -x)                                          isSolvedByX  G(x, ">" ,  0)
+  @Test fun umst_011()   = G(0, ">=", -x)                                         isSolvedByX  G(x, ">=",  0)
+  @Test fun umst_012()   = G(-x, ">", Val(0))                                     isSolvedByX  G(x, "<" ,  0)
+  @Test fun umst_013()   = G(-x, ">=", Val(0))                                    isSolvedByX  G(x, "<=",  0)
+  @Test fun umst_014()   = G(-x, "<", Val(0))                                     isSolvedByX  G(x, ">" ,  0)
+  @Test fun umst_015()   = G(-x, "<=", -Val(0))                                   isSolvedByX  G(x, ">=",  0)
+  @Test fun umst_016()   = G(x, "=", x + 14 + y)                                  isSolvedByX  x_nicht_relevant
+  @Test fun umst_017()   = G(Val(16) / x, "=", Val(16) / x)                       isSolvedByX  x_nicht_relevant
+  @Test fun umst_018()   = G(Quadrat(x), "=", 4)                                  isSolvedByX  listOf(G(x, "=", 2), G(x, "=", -2))
+  @Test fun umst_019_f() = G(Quadrat(Quadrat(x)), "=", 16)                        isSolvedByX  listOf(G(x, "=", 2), G(x, "=", -2))
+  //@formatter:on
 
   @Test fun wb_001() = wb("]-I,5[", listOf(-1000.0, -1.0, 4.99999), listOf(5.0, 100.0))
   @Test fun wb_002() = wb("[-12,I[", listOf(-12.0, -10.0, 1000.0), listOf(-12.00001, -10000.0))
@@ -81,7 +84,6 @@ class Tests {
   @Test fun wb_005() = wb("]0,1[", listOf(0.00001, 0.99999), listOf(0.0, -0.00001, 1.000001, 100.0, -100.0, 1.0))
 
   @Test fun gleichheit() = Gleichheit.values().forEach { println(" - ${it.name} ${it.look} flip:${it.flip.name}") }
-
 
   val x1 = Var("x1")
   val x2 = Var("x2")
@@ -102,7 +104,6 @@ class Tests {
 
     inRange.forEach { value -> assertTrue("$value should be in Range of $wb", wb.inRange(value)) }
   }
-
 
   private fun withExpVal(expected: Expression, subVal: Expression, exp: Expression) {
     println("EXPRESSION '$exp' mit Wert x = '$subVal' soll vereinfacht = '$expected' sein")
@@ -125,35 +126,43 @@ class Tests {
       assertNotEquals(gl1, gl2)
   }
 
-  private fun umst(expected: Expression, gleichung: Gleichung) {
-    umst(G(x, "=", expected), gleichung)
-  }
 
-  private fun umst(expected: Gleichung, gleichung: Gleichung) {
-    println("GLEICHUNG '$gleichung' soll nach x umgestellt sein: '$expected'")
-    val umstellungsErgebnis = gleichung.loese_auf_nach("x")
-    assertTrue("Ergebnis: $umstellungsErgebnis", umstellungsErgebnis is ErfolgreicheUmstellung)
-    umstellungsErgebnis as ErfolgreicheUmstellung
-    assertEquals(expected.left, umstellungsErgebnis.gleichung.left)
-    assertEquals(expected.right, umstellungsErgebnis.gleichung.right)
-    assertEquals(expected.gleichheit, umstellungsErgebnis.gleichung.gleichheit)
+  private val x_nicht_relevant = G(x, "=", x)
+
+  private infix fun Gleichung.isSolvedByX(expected: Gleichung) = this.isSolvedByX(listOf(expected))
+
+  private infix fun Gleichung.isSolvedByX(expected: List<Gleichung>) {
+    val umstellungsErgebnis = this.loese_auf_nach("x")
+    if (expected[0] === x_nicht_relevant) {
+      println("GLEICHUNG '$this' soll nach x ergeben, dass x nicht relevant ist")
+      assertTrue("Ergebnis: $umstellungsErgebnis", umstellungsErgebnis is VariableNichtRelevant)
+    } else {
+      println("GLEICHUNG '$this' soll nach x umgestellt sein: '$expected'")
+      assertTrue("Ergebnis: $umstellungsErgebnis", umstellungsErgebnis is ErfolgreicheUmstellung)
+      umstellungsErgebnis as ErfolgreicheUmstellung
+
+      assertEquals(expected.size, umstellungsErgebnis.gleichungen.size)
+      expected.forEachIndexed { i, exp ->
+        assertEquals(exp.left, umstellungsErgebnis.gleichungen[i].left)
+        assertEquals(exp.right, umstellungsErgebnis.gleichungen[i].right)
+        assertEquals(exp.gleichheit, umstellungsErgebnis.gleichungen[i].gleichheit)
+      }
+    }
   }
 
   private fun umstNR(gleichung: Gleichung) {
-    println("GLEICHUNG '$gleichung' soll nach x ergeben, dass x nicht relevant ist")
-    val umstellungsErgebnis = gleichung.loese_auf_nach("x")
-    assertTrue("Ergebnis: $umstellungsErgebnis", umstellungsErgebnis is VariableNichtRelevant)
+
   }
 
-  private fun simp(expSimple: Expression, exp: Expression) {
-    println("EXPRESSION '$exp' soll simple aussehen: '$expSimple'")
+  private infix fun Expression.isSimple(expected: Expression) {
+    println("EXPRESSION '$this' soll simple aussehen: '$expected'")
 
     if (DEBUG) println("--- original")
-    if (DEBUG) println(exp.toGraph())
-    val simple = exp.simplify()
+    if (DEBUG) println(this.toGraph())
+    val simple = this.simplify()
     if (DEBUG) println("--- simple")
     if (DEBUG) println(simple.toGraph())
 
-    assertEquals(expSimple, simple)
+    assertEquals(expected, simple)
   }
 }
