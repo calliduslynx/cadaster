@@ -215,7 +215,7 @@ fun main(args: Array<String>) {
         }
 
         println("\n= $graphEndings $putInBoxes=\n")
-        println(getAsTree(it, { it.stringForGraph }, { it.children() }))
+        println(getAsTree(it, { it.stringForGraph }, { it.children }))
       }
     }
     println("\n----------------------\n----------------------\n----------------------")

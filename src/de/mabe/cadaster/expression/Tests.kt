@@ -81,32 +81,7 @@ class Tests {
 
   @Test fun gleichheit() = Gleichheit.values().forEach { println(" - ${it.name} ${it.look} flip:${it.flip.name}") }
 
-  @Test fun wertebereich1() {
-    val exp = Wurzel(x + y)
-    val wb = exp.wertebereiche()[0]
-    assertEquals(G(Val(0), "<=", x + y), wb)
-
-    assertEquals(G(x, ">=", -y), (wb.loese_auf_nach("x") as ErfolgreicheUmstellung).gleichung)
-    assertEquals(G(y, ">=", -x), (wb.loese_auf_nach("y") as ErfolgreicheUmstellung).gleichung)
-  }
-
-  @Test fun wertebereich2() {
-    val exp = Wurzel(x * y)
-    val wb = exp.wertebereiche()[0]
-    assertEquals(G(Val(0), "<=", x * y), wb)
-
-    // TODO das hier unten ist nicht ganz korrekt ... 
-    // entweder x >= 0 && y >= 0     ||    x <= 0 && y <= 0    
-    assertEquals(G(x, ">=", Val(0)), (wb.loese_auf_nach("x") as ErfolgreicheUmstellung).gleichung)
-    assertEquals(G(y, ">=", Val(0)), (wb.loese_auf_nach("y") as ErfolgreicheUmstellung).gleichung)
-  }
-
-  @Test fun wertebereich3() {
-    val exp = Wurzel(x + y + z)
-    val wb = exp.wertebereiche()[0]
-    assertEquals(G(Val(0), "<=", x + y + z), wb)
-  }
-
+  
   val x1 = Var("x1")
   val x2 = Var("x2")
   val y1 = Var("y1")

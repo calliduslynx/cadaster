@@ -3,7 +3,6 @@ package de.mabe.cadaster
 import de.mabe.cadaster.PValueType.exactly
 import de.mabe.cadaster.expression.Gleichheit.IST_GLEICH
 import de.mabe.cadaster.expression.Gleichung
-import de.mabe.cadaster.expression.VariableCount
 
 
 sealed class SolveResult
@@ -12,12 +11,6 @@ class UnableToSolve() : SolveResult()
 class Solvede(vals: Map<String, Double>) : SolveResult()
 
 private fun List<*>.toListString() = this.map { "          # $it" }.joinToString("\n")
-
-private fun List<Gleichung>.variableCount(): VariableCount {
-  val variableCount = VariableCount()
-  this.map { it.variableCount(variableCount) }
-  return variableCount
-}
 
 class Cadaster {
   fun solve(project: Project): SolveResult {
@@ -37,7 +30,6 @@ class Cadaster {
     println("> simplify gleichungen")
     gleichungen = gleichungen.map { it.simplify() }
     println("     gleichungen:\n" + gleichungen.toListString())
-    println("     missing vars (Name, Anzahl):\n" + gleichungen.variableCount().toList().toListString())
 
     // **************************
 

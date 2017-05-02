@@ -16,7 +16,7 @@ class GleichungssytemResult {
 
 class Gleichungssystem(vararg gleichungen: Gleichung) {
   val gleichungen = gleichungen.toList()
-  val variablen = gleichungen.map { it.variableCount().keys }.flatten().distinct()
+  val variablen: HashSet<String> = gleichungen.fold(HashSet<String>(), { set, gleichung -> set.addAll(gleichung.variables); set })
 
   /** nimmt die Gleichung und versucht sie umzustellen, für alle be*/
   private fun erzeugeGleichungenUmgestelltNachVar(gleichung: Gleichung) = variablen.map { varName ->

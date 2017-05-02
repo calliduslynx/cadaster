@@ -42,11 +42,14 @@ fun G(left: Expression, gleichheit: String, right: Expression) = Gleichung(left,
 
 class Gleichung(val left: Expression, val gleichheit: Gleichheit, val right: Expression) {
   override fun toString() = "$left $gleichheit $right"
+
   fun simplify() = Gleichung(left.simplify(), gleichheit, right.simplify())
-  fun variableCount(variableCount: VariableCount = VariableCount()): VariableCount = left.variableCount(right.variableCount(variableCount))
+  val variables by lazy { left.variables + right.variables }
+
   fun withValue(varName: String, value: Int) = withValue(varName, value.toDouble())
   fun withValue(varName: String, value: Double) = withValue(varName, Val(value))
   fun withValue(varName: String, value: Expression) = Gleichung(left.withValue(varName, value), gleichheit, right.withValue(varName, value))
+
   fun isCorrect(): GleichungKorrect {
     val leftValue = (left.simplify() as? ValueExpression)?.value
     val rightValue = (right.simplify() as? ValueExpression)?.value
@@ -62,7 +65,7 @@ class Gleichung(val left: Expression, val gleichheit: Gleichheit, val right: Exp
     // **** schauen ob beides gleich ist
     if (left.simplify() == right.simplify()) return VariableNichtRelevant(varName, Gleichung(left.simplify(), gleichheit, right.simplify()))
 
-    // ***** bring var to left --- make deep copy
+    // ***** bring var to left
     val leftContainsVar = left.containsVariable(varName)
     val rightContainsVar = right.containsVariable(varName)
     debug("loese_auf_nach: '$varName' links: $leftContainsVar rechts:$rightContainsVar")
@@ -80,19 +83,18 @@ class Gleichung(val left: Expression, val gleichheit: Gleichheit, val right: Exp
     }
     debug("umgestellt (simple): $tmpLeft $tmpGleichheit $tmpRight")
 
-    val varCount = tmpLeft.variableCount()[varName]?.get() ?: 0
 
-    if (varCount == 0) {
+    if (!tmpLeft.variables.contains(varName)) {
       return VariableNichtRelevant(varName, Gleichung(tmpLeft, gleichheit, tmpRight))
     }
 
     try {
       while (tmpLeft !is VariableExpression) {
-        val (newLeft, newRight, flip) = tmpLeft.shiftOver(varName, tmpRight)
-        debug(" shift over '$varName' : $tmpLeft $tmpGleichheit $tmpRight --> $newLeft $tmpGleichheit? $newRight flip: $flip")
-        if (flip) tmpGleichheit = tmpGleichheit.flip
-        tmpLeft = newLeft
-        tmpRight = newRight
+        val aufloesungsErgebnis = tmpLeft.loese_auf(varName)
+        tmpLeft = aufloesungsErgebnis.newLeft
+        tmpRight = aufloesungsErgebnis.aenderungDerRechtenSeiteList[0].rightSideManipulationMethod.invoke(tmpRight)
+        if (aufloesungsErgebnis.aenderungDerRechtenSeiteList[0].flipGleichheit) tmpGleichheit = tmpGleichheit.flip
+        if (aufloesungsErgebnis.aenderungDerRechtenSeiteList.size > 1) println("ERROR --> zweites Ergebnis ignoriert")
       }
       tmpRight = tmpRight.simplify()
       return ErfolgreicheUmstellung(Gleichung(tmpLeft, tmpGleichheit, tmpRight))
@@ -112,7 +114,7 @@ class Gleichung(val left: Expression, val gleichheit: Gleichheit, val right: Exp
       {
         when (it) {
           is Gleichung -> listOf(left, right)
-          is Expression -> it.children()
+          is Expression -> it.children
           else -> throw IllegalStateException()
         }
       }
