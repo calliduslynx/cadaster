@@ -51,6 +51,7 @@ class Tests {
   @Test fun simp_022_f() = simp(x, (Quadrat(4) / y) - (Quadrat(4) / y))
   @Test fun simp_023() = simp(Val(16) / y, Quadrat(4) / y)
   @Test fun simp_024_f() = simp(Val(0), (Val(16) / x) - (Val(16) / x))
+  @Test fun simp_024() = simp(-x - y, (x + y) - ((x + y) + (x + y)))
 
   @Test fun exp_withVal_001() = withExpVal(Val(10), Val(2), x + 8)
 
@@ -71,6 +72,12 @@ class Tests {
   @Test fun umst_015() = umst(G(x, ">=", Val(0)), G(-x, "<=", -Val(0)))
   @Test fun umst_016() = umstNR(G(x, "=", x + 14 + y))
   @Test fun umst_017() = umstNR(G(Val(16) / x, "=", Val(16) / x))
+
+  @Test fun wb_001() = wb("]-I,5[", listOf(-1000.0, -1.0, 4.99999), listOf(5.0, 100.0))
+  @Test fun wb_002() = wb("[-12,I[", listOf(-12.0, -10.0, 1000.0), listOf(-12.00001, -10000.0))
+  @Test fun wb_003() = wb("[0,1]", listOf(0.0, 0.00001, 0.99999, 1.0), listOf(-0.00001, 1.000001, 100.0, -100.0))
+  @Test fun wb_004() = wb("]0,1]", listOf(0.00001, 0.99999, 1.0), listOf(0.0, -0.00001, 1.000001, 100.0, -100.0))
+  @Test fun wb_005() = wb("]0,1[", listOf(0.00001, 0.99999), listOf(0.0, -0.00001, 1.000001, 100.0, -100.0, 1.0))
 
   @Test fun gleichheit() = Gleichheit.values().forEach { println(" - ${it.name} ${it.look} flip:${it.flip.name}") }
 
@@ -99,7 +106,27 @@ class Tests {
     val wb = exp.wertebereiche()[0]
     assertEquals(G(Val(0), "<=", x + y + z), wb)
   }
+
+  val x1 = Var("x1")
+  val x2 = Var("x2")
+  val y1 = Var("y1")
+  val y2 = Var("y2")
+
+
+  @Test fun test() {
+    val g = G(Quadrat(2), "=", Quadrat(Val(10) - x1) + Quadrat((y2 - y1)))
+    println(g.loese_auf_nach(x1))
+    println(g.loese_auf_nach(y1))
+    println(g.loese_auf_nach(y2))
+  }
+
   // ******************************************************************************************************************
+  private fun wb(wbString: String, inRange: List<Double>, outRange: List<Double>) {
+    val wb = Wertebereich(wbString)
+
+    inRange.forEach { value -> assertTrue("$value should be in Range of $wb", wb.inRange(value)) }
+  }
+
 
   private fun withExpVal(expected: Expression, subVal: Expression, exp: Expression) {
     println("EXPRESSION '$exp' mit Wert x = '$subVal' soll vereinfacht = '$expected' sein")

@@ -5,7 +5,7 @@ import de.mabe.cadaster.expression.Gleichheit.IST_UNGLEICH
 import de.mabe.cadaster.util.getAsTree
 import java.util.concurrent.atomic.AtomicInteger
 
-
+typealias ignore = Unit
 internal fun String.braced() = "( $this )"
 
 // ***********************************************************************************************
@@ -441,7 +441,7 @@ private class MalCounts {
 
     variableAndPotenz.forEach { varName, potenz ->
       when (potenz) {
-        0 -> Unit
+        0 -> ignore
         2 -> list.add(Quadrat(Var(varName)))
         else -> {
           val isNeg = potenz < 0

@@ -119,13 +119,14 @@ val list = listOf(
     (x * 2) + -x,
     (x * 3) - (x * 4),
     (x * -3) + (x * 4),
-    (x + y) - ((x + y) + (x + y)) // TODO fehlender Rekursiv-Teil bei Plus-Assoziativ
+    (x + y) - ((x + y) + (x + y))
 )
 
 val DEBUG = false
 
-fun debug(string: String) {
-  if (DEBUG) println("DEBUG  " + string)
+fun debug(string: Any) {
+  if (!DEBUG) return
+  string.toString().lines().forEach { println("DEBUG  $it") }
 }
 
 val gleichungen = listOf(

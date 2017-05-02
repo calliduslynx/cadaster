@@ -57,6 +57,7 @@ class Gleichung(val left: Expression, val gleichheit: Gleichheit, val right: Exp
     }
   }
 
+  fun loese_auf_nach(variable: VariableExpression) = loese_auf_nach(variable.name)
   fun loese_auf_nach(varName: String): UmstellungsErgebnis {
     // **** schauen ob beides gleich ist
     if (left.simplify() == right.simplify()) return VariableNichtRelevant(varName, Gleichung(left.simplify(), gleichheit, right.simplify()))
