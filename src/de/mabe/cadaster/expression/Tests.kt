@@ -55,23 +55,24 @@ class Tests {
 
   @Test fun exp_withVal_001() = withExpVal(Val(10), Val(2), x + 8)
 
-  @Test fun umst_001() = umst(Val(12), G(x, "=", Val(12)))
+  @Test fun umst_001() = umst(Val(12), G(x, "=", 12))
   @Test fun umst_002() = umst(Val(9), G(x, "=", Val(12) - 3))
-  @Test fun umst_003() = umst(Val(1), G(Val(0), "=", x + x + x + x + x + x + x + x + x + x - 10))
-  @Test fun umst_004() = umst(Val(-1), G(Val(0), "=", x + x + x + x + x + x + x + x + x + x + 10))
-  @Test fun umst_005() = umst(G(x, "=", Val(-1)), G(Val(0), "=", x + x + x + x + x + x + x + x + x + x + 10))
-  @Test fun umst_006() = umst(G(x, ">", Val(10)), G(Val(0), "<", x - 10))
-  @Test fun umst_007() = umst(G(x, "<", Val(10)), G(Val(0), "<", Val(10) - x))
-  @Test fun umst_008() = umst(G(x, "<", Val(0)), G(Val(0), "<", -x))
-  @Test fun umst_009() = umst(G(x, "<=", Val(0)), G(Val(0), "<=", -x))
-  @Test fun umst_010() = umst(G(x, ">", Val(0)), G(Val(0), ">", -x))
-  @Test fun umst_011() = umst(G(x, ">=", Val(0)), G(Val(0), ">=", -x))
-  @Test fun umst_012() = umst(G(x, "<", Val(0)), G(-x, ">", Val(0)))
-  @Test fun umst_013() = umst(G(x, "<=", Val(0)), G(-x, ">=", Val(0)))
-  @Test fun umst_014() = umst(G(x, ">", Val(0)), G(-x, "<", Val(0)))
-  @Test fun umst_015() = umst(G(x, ">=", Val(0)), G(-x, "<=", -Val(0)))
+  @Test fun umst_003() = umst(Val(1), G(0, "=", x + x + x + x + x + x + x + x + x + x - 10))
+  @Test fun umst_004() = umst(Val(-1), G(0, "=", x + x + x + x + x + x + x + x + x + x + 10))
+  @Test fun umst_005() = umst(G(x, "=", -1), G(0, "=", x + x + x + x + x + x + x + x + x + x + 10))
+  @Test fun umst_006() = umst(G(x, ">", 10), G(0, "<", x - 10))
+  @Test fun umst_007() = umst(G(x, "<", 10), G(0, "<", Val(10) - x))
+  @Test fun umst_008() = umst(G(x, "<", 0), G(0, "<", -x))
+  @Test fun umst_009() = umst(G(x, "<=", 0), G(0, "<=", -x))
+  @Test fun umst_010() = umst(G(x, ">", 0), G(0, ">", -x))
+  @Test fun umst_011() = umst(G(x, ">=", 0), G(0, ">=", -x))
+  @Test fun umst_012() = umst(G(x, "<", 0), G(-x, ">", Val(0)))
+  @Test fun umst_013() = umst(G(x, "<=", 0), G(-x, ">=", Val(0)))
+  @Test fun umst_014() = umst(G(x, ">", 0), G(-x, "<", Val(0)))
+  @Test fun umst_015() = umst(G(x, ">=", 0), G(-x, "<=", -Val(0)))
   @Test fun umst_016() = umstNR(G(x, "=", x + 14 + y))
   @Test fun umst_017() = umstNR(G(Val(16) / x, "=", Val(16) / x))
+  @Test fun umst_018() = umst(G(x, "=", 2), G(Quadrat(x), "=", 4)) // FIXME: falsch
 
   @Test fun wb_001() = wb("]-I,5[", listOf(-1000.0, -1.0, 4.99999), listOf(5.0, 100.0))
   @Test fun wb_002() = wb("[-12,I[", listOf(-12.0, -10.0, 1000.0), listOf(-12.00001, -10000.0))
@@ -81,7 +82,7 @@ class Tests {
 
   @Test fun gleichheit() = Gleichheit.values().forEach { println(" - ${it.name} ${it.look} flip:${it.flip.name}") }
 
-  
+
   val x1 = Var("x1")
   val x2 = Var("x2")
   val y1 = Var("y1")

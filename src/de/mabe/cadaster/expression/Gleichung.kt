@@ -37,8 +37,21 @@ enum class Gleichheit(val look: String, flip: () -> Gleichheit) {
   }
 }
 
+
+//@formatter:off
+fun G(left: Int       , gleichheit: Gleichheit, right: Expression) = G(Val(left), gleichheit, right)
+fun G(left: Double    , gleichheit: Gleichheit, right: Expression) = G(Val(left), gleichheit, right)
+fun G(left: Expression, gleichheit: Gleichheit, right: Int       ) = G(left, gleichheit, Val(right))
+fun G(left: Expression, gleichheit: Gleichheit, right: Double    ) = G(left, gleichheit, Val(right))
 fun G(left: Expression, gleichheit: Gleichheit, right: Expression) = Gleichung(left, gleichheit, right)
-fun G(left: Expression, gleichheit: String, right: Expression) = Gleichung(left, Gleichheit.get(gleichheit), right)
+
+fun G(left: Int       , gleichheit: String    , right: Expression) = G(Val(left), gleichheit, right)
+fun G(left: Double    , gleichheit: String    , right: Expression) = G(Val(left), gleichheit, right)
+fun G(left: Expression, gleichheit: String    , right: Int       ) = G(left, gleichheit, Val(right))
+fun G(left: Expression, gleichheit: String    , right: Double    ) = G(left, gleichheit, Val(right))
+fun G(left: Expression, gleichheit: String    , right: Expression) = G(left, Gleichheit.get(gleichheit), right)
+//@formatter:on
+
 
 class Gleichung(val left: Expression, val gleichheit: Gleichheit, val right: Expression) {
   override fun toString() = "$left $gleichheit $right"
