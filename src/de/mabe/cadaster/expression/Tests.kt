@@ -82,7 +82,7 @@ class Tests {
   
   @Test fun erg_simp_001() = "[0,1];[1,2]"            hatSimplesErgebnis  "[0,2]"
   @Test fun erg_simp_002() = "[1,2];[0,1]"            hatSimplesErgebnis  "[0,2]"
-  @Test fun erg_simp_003()= "[0,3];[1,2]"            hatSimplesErgebnis  "[0,3]"
+  @Test fun erg_simp_003() = "[0,3];[1,2]"            hatSimplesErgebnis  "[0,3]"
   @Test fun erg_simp_004() = "[0,1[;[1,2]"            hatSimplesErgebnis  "[0,2]"
   @Test fun erg_simp_005() = "[0,1];]1,2]"            hatSimplesErgebnis  "[0,2]"
   @Test fun erg_simp_006() = "[0,1[;]1,2]"            hatSimplesErgebnis  "[0,1[;]1,2]"

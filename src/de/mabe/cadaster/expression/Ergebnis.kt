@@ -87,11 +87,15 @@ sealed class TeilErgebnis {
       }
     }
   }
+
+  abstract fun inRange(value: Double): Boolean
 }
 
 // ******************************************************************************************************************
 
 class KonkretesErgebnis(val value: Double) : TeilErgebnis() {
+  override fun inRange(value: Double) = value == this.value
+
   override fun toString() = value.toString()
   override fun equals(other: Any?) = (other as? KonkretesErgebnis)?.value == value
 }
@@ -134,7 +138,7 @@ class Grenzwert : TeilErgebnis {
   }
 
   /** true or false if given number is in Range */
-  fun inRange(value: Double) = when (lower) {
+  override fun inRange(value: Double) = when (lower) {
     is INFINITE -> true
     is VAL_INKL -> value >= lower.value
     is VAL_EXKL -> value > lower.value
