@@ -87,7 +87,7 @@ data class PointDistanceRule(
     val idPoint2: String,
     val distance: Double
 ) : Rule() {
-  override fun gleichung() = Gleichung(
+  override fun gleichung() = G(
       Quadrat(Val(distance)),
       IST_GLEICH,
       Quadrat(Var("$idPoint2.x") - Var("$idPoint1.x")) + Quadrat(Var("$idPoint2.y") - Var("$idPoint1.y"))

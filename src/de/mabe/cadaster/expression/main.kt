@@ -45,7 +45,7 @@ fun main(args: Array<String>) {
     println()
     println("              simple: " + it.simplify())
     println("      variable-count: " + it.variables)
-    println("         solve for x: " + Gleichung(it, IST_GLEICH, Val(0)).loese_auf_nach("x"))
+    println("         solve for x: " + G(it, "=", 0).loese_auf_nach("x"))
     println("               graph: \n" + it.toGraph().indentBy(20))
     println("               graph: \n" + it.simplify().toGraph().indentBy(20))
   }
@@ -62,32 +62,32 @@ val y1 = Var("y1")
 
 val gleichungssysteme = listOf(
     Gleichungssystem(
-        Gleichung(Val(4), IST_GLEICH, x),
-        Gleichung(Val(12), IST_GLEICH, x + y)
+        G(4, IST_GLEICH, x),
+        G(12, IST_GLEICH, x + y)
     ),
     //    Gleichungssystem( FIXME: LOOP
-//        Gleichung(Val(4), IST_GLEICH, x),
-//        Gleichung(Val(12), IST_GLEICH, x + y),
-//        Gleichung(Val(24), IST_GLEICH, x + y + z)
+//        EineGleichung(Val(4), IST_GLEICH, x),
+//        EineGleichung(Val(12), IST_GLEICH, x + y),
+//        EineGleichung(Val(24), IST_GLEICH, x + y + z)
 //    ),
     Gleichungssystem(
-        Gleichung(Val(4), IST_GLEICH, x + y),
-        Gleichung(Val(12), IST_GLEICH, x - y)
+        G(4, "=", x + y),
+        G(12, "=", x - y)
     ),
     Gleichungssystem(
-        Gleichung(Val(4), IST_GLEICH, Val(1) / (x + y))
+        G(4, "=", Val(1) / (x + y))
     ),
     Gleichungssystem(
-        Gleichung(Val(4), IST_GLEICH, Wurzel(x * y))
+        G(4, "=", Wurzel(x * y))
     ),
     Gleichungssystem(
-        Gleichung(x, IST_GLEICH, x + 14 + y),
-        Gleichung(y, IST_GLEICH, x * 3)
+        G(x, "=", x + 14 + y),
+        G(y, "=", x * 3)
     )
     ,
     Gleichungssystem(// LOOP
-        Gleichung(Val(4), IST_GLEICH, Val(1) / (x + y)),
-        Gleichung(Val(4), IST_GLEICH, Val(1) / (z + y + x))
+        G(4, "=", Val(1) / (x + y)),
+        G(4, "=", Val(1) / (z + y + x))
     )
 )
 
@@ -130,23 +130,10 @@ fun debug(string: Any) {
 }
 
 val gleichungen = listOf(
-    Gleichung(x + 12, IST_GLEICH, x * 13)
-    ,
-    Gleichung(
-        (Val(12) + 23) * 12,
-        IST_GLEICH,
-        (x * 13) - (Val(12) / 4)
-    ),
-    Gleichung(
-        (y + 23) * 12,
-        IST_GLEICH,
-        (x * 13) - (Val(12) / 4)
-    ),
-    Gleichung(
-        x + 4,
-        IST_GLEICH,
-        x * 0
-    )
+    G(x + 12, "=", x * 13),
+    G((Val(12) + 23) * 12, "=", (x * 13) - (Val(12) / 4)),
+    G((y + 23) * 12, "=", (x * 13) - (Val(12) / 4)),
+    G(x + 4, "=", x * 0)
 )
 
 

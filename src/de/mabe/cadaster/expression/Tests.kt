@@ -75,6 +75,7 @@ class Tests {
   @Test fun umst_017()   = G(Val(16) / x, "=", Val(16) / x)                       isSolvedByX  x_nicht_relevant
   @Test fun umst_018()   = G(Quadrat(x), "=", 4)                                  isSolvedByX  listOf(G(x, "=", 2), G(x, "=", -2))
   @Test fun umst_019_f() = G(Quadrat(Quadrat(x)), "=", 16)                        isSolvedByX  listOf(G(x, "=", 2), G(x, "=", -2))
+  @Test fun umst_020()   = G(Quadrat(x - 2), "=", y * 3)                          isSolvedByX  listOf(G(x, "=", Wurzel(y*3) + 2), G(x, "=", -Wurzel(y*3) + 2))
   //@formatter:on
 
   @Test fun wb_001() = wb("]-I,5[", listOf(-1000.0, -1.0, 4.99999), listOf(5.0, 100.0))
@@ -100,7 +101,7 @@ class Tests {
 
   // ******************************************************************************************************************
   private fun wb(wbString: String, inRange: List<Double>, outRange: List<Double>) {
-    val wb = Wertebereich(wbString)
+    val wb = Grenzwert(wbString)
 
     inRange.forEach { value -> assertTrue("$value should be in Range of $wb", wb.inRange(value)) }
   }
@@ -141,17 +142,12 @@ class Tests {
       assertTrue("Ergebnis: $umstellungsErgebnis", umstellungsErgebnis is ErfolgreicheUmstellung)
       umstellungsErgebnis as ErfolgreicheUmstellung
 
-      assertEquals(expected.size, umstellungsErgebnis.gleichungen.size)
-      expected.forEachIndexed { i, exp ->
-        assertEquals(exp.left, umstellungsErgebnis.gleichungen[i].left)
-        assertEquals(exp.right, umstellungsErgebnis.gleichungen[i].right)
-        assertEquals(exp.gleichheit, umstellungsErgebnis.gleichungen[i].gleichheit)
+      val expectedGleichung = when (expected.size) {
+        1 -> expected[0]
+        else -> G(expected)
       }
+      assertEquals(expectedGleichung, umstellungsErgebnis.gleichung)
     }
-  }
-
-  private fun umstNR(gleichung: Gleichung) {
-
   }
 
   private infix fun Expression.isSimple(expected: Expression) {

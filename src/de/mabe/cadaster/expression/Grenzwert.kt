@@ -1,13 +1,14 @@
 package de.mabe.cadaster.expression
 
+
 class Wertebereiche {
 
 }
 
 
-class Wertebereich(val str: String) {
-  private val lower: Grenzwert
-  private val upper: Grenzwert
+class Grenzwert(val str: String) {
+  private val lower: Grenze
+  private val upper: Grenze
 
   init {
     val lowerStr = str.split(",")[0]
@@ -38,11 +39,11 @@ class Wertebereich(val str: String) {
     is VAL_EXKL -> value < upper.value
   }
 
-  override fun toString() = str // TODO build from data
+  override fun toString() = str
 }
 
-private sealed class Grenzwert
+private sealed class Grenze
 
-private object INFINITE : Grenzwert()
-private class VAL_INKL(val value: Double) : Grenzwert()
-private class VAL_EXKL(val value: Double) : Grenzwert()
+private object INFINITE : Grenze()
+private class VAL_INKL(val value: Double) : Grenze()
+private class VAL_EXKL(val value: Double) : Grenze()
