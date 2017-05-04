@@ -1,3 +1,18 @@
+ Cadaster
+========== 
+
+ Beschreibung
+--------------
+
+Man zeichnet Grundrisse von Grundstücken, Gebäuden oder Räumen
+grob auf. Danach beginnt man die bekannten Maße einzutragen. Cadaster
+berechnet mit den bekannten Werten möglichst alle anderen Werte des
+Grundrisses. Wenn Werte nicht klar berechnet werden können, wird zumindest
+eine gültige Variante aller Werte gezeigt.
+
+ Definitionen
+--------------
+
 **Expression**
 
 Ausdruck oder Term, der auf einer Seite einer Gleichung steht
@@ -54,3 +69,8 @@ Werten oder Grenzwerten.
 
 *Kann:*
 - sich selbst Lösen und liefert alle Variablen zurück
+
+ Lizenz
+--------
+Apache 2.0 - 
+http://www.apache.org/licenses/LICENSE-2.0
