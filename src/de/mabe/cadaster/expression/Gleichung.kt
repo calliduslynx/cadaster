@@ -1,5 +1,6 @@
 package de.mabe.cadaster.expression
 
+import de.mabe.cadaster.expression.Gleichheit.IST_GLEICH
 import de.mabe.cadaster.expression.GleichungKorrect.*
 import de.mabe.cadaster.util.getAsTree
 
@@ -15,7 +16,7 @@ class UmstellungNichtErfolgreich(val message: String) : UmstellungsErgebnis() {
 }
 
 class VariableNichtRelevant(val varName: String, val gleichung: Gleichung) : UmstellungsErgebnis() {
-  override fun toString() = "SOLVED: Variable $varName not relevant. Simplified EineGleichung: $gleichung (${gleichung.isCorrect()})"
+  override fun toString() = "SOLVED: Variable $varName not relevant. Simplified EineGleichung: $gleichung (${gleichung.istKorrekt()})"
 }
 
 // ******************************************************************************************************************
@@ -69,9 +70,10 @@ interface Gleichung {
   fun simplify(): Gleichung
   fun loese_auf_nach(variable: VariableExpression) = loese_auf_nach(variable.name)
   fun loese_auf_nach(varName: String): UmstellungsErgebnis
-  fun isCorrect(): GleichungKorrect
+  fun istKorrekt(): GleichungKorrect
   fun toGraph(): String
   val variables: Set<String>
+  fun getErgebnis(): Ergebnis?
 }
 
 // ******************************************************************************************************************
@@ -85,8 +87,10 @@ private class GleichungsMenge(val gleichungen: List<Gleichung>) : Gleichung {
     TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
   }
 
-  override fun isCorrect() = gleichungen.fold(KORREKT) { statusBisher, gleichung ->
-    val statusNeu = gleichung.isCorrect()
+  override fun getErgebnis() = TODO("Not implemented yed")
+
+  override fun istKorrekt() = gleichungen.fold(KORREKT) { statusBisher, gleichung ->
+    val statusNeu = gleichung.istKorrekt()
     when {
       statusNeu == NICHT_KORREKT || statusBisher == NICHT_KORREKT -> NICHT_KORREKT
       statusNeu == MGLWEISE || statusBisher == MGLWEISE -> MGLWEISE
@@ -101,6 +105,7 @@ private class GleichungsMenge(val gleichungen: List<Gleichung>) : Gleichung {
   override fun toString() = gleichungen.map { it.toString() }.joinToString("  &  ")
 }
 
+
 // ******************************************************************************************************************
 
 private class EineGleichung(val left: Expression, val gleichheit: Gleichheit, val right: Expression) : Gleichung {
@@ -113,7 +118,7 @@ private class EineGleichung(val left: Expression, val gleichheit: Gleichheit, va
   fun withValue(varName: String, value: Double) = withValue(varName, Val(value))
   fun withValue(varName: String, value: Expression) = EineGleichung(left.withValue(varName, value), gleichheit, right.withValue(varName, value))
 
-  override fun isCorrect(): GleichungKorrect {
+  override fun istKorrekt(): GleichungKorrect {
     val leftValue = (left.simplify() as? ValueExpression)?.value
     val rightValue = (right.simplify() as? ValueExpression)?.value
     return when {
@@ -121,6 +126,20 @@ private class EineGleichung(val left: Expression, val gleichheit: Gleichheit, va
       leftValue == rightValue -> KORREKT
       else -> NICHT_KORREKT
     }
+  }
+
+  override fun getErgebnis(): Ergebnis? {
+    if (left !is VariableExpression || right !is ValueExpression)
+      return null
+
+    val varName = left.name
+    val value = right.value
+
+    return Ergebnis(varName, listOf(
+        when (gleichheit) {
+          IST_GLEICH -> KonkretesErgebnis(value)
+          else -> TODO()
+        }))
   }
 
   override fun loese_auf_nach(varName: String): UmstellungsErgebnis {

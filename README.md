@@ -1,8 +1,6 @@
  Cadaster
 ========== 
 
- Beschreibung
---------------
 
 Man zeichnet Grundrisse von Grundstücken, Gebäuden oder Räumen
 grob auf. Danach beginnt man die bekannten Maße einzutragen. Cadaster
@@ -48,14 +46,14 @@ Werten oder Grenzwerten.
 
 *Kann sein:*
 - ein konkreter Wert: z.B. `4.32`
-- eine Menge an konkreten Werten: z.B. `2, -2`
+- eine Menge an konkreten Werten: z.B. `2; -2`
 - ein Grenzwert: z.B. `]I,23]`
-- eine Menge an Grenzwerten: `]I,23], [30, 31]`
-- eine Menge an Grenzwerten und konkreten Werten: `2,-2,[-1,1]`
+- eine Menge an Grenzwerten: `]I,23]; [30, 31]`
+- eine Menge an Grenzwerten und konkreten Werten: `2;-2;[-1,1]`
 
 
 *Kann:*
-- fässt automatisch Blöcke zusammen
+- fässt automatisch TeilErgebnisse zusammen
   - `2,-2,2` --> `-2,2`
   - `[-2,2],1,2,3` --> `[-2,2],3`
   - `[-2,2],[0,3]` --> `[-2,3]`

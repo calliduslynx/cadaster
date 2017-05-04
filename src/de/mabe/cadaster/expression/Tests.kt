@@ -76,13 +76,32 @@ class Tests {
   @Test fun umst_018()   = G(Quadrat(x), "=", 4)                                  isSolvedByX  listOf(G(x, "=", 2), G(x, "=", -2))
   @Test fun umst_019_f() = G(Quadrat(Quadrat(x)), "=", 16)                        isSolvedByX  listOf(G(x, "=", 2), G(x, "=", -2))
   @Test fun umst_020()   = G(Quadrat(x - 2), "=", y * 3)                          isSolvedByX  listOf(G(x, "=", Wurzel(y*3) + 2), G(x, "=", -Wurzel(y*3) + 2))
-  //@formatter:on
 
-  @Test fun wb_001() = wb("]-I,5[", listOf(-1000.0, -1.0, 4.99999), listOf(5.0, 100.0))
-  @Test fun wb_002() = wb("[-12,I[", listOf(-12.0, -10.0, 1000.0), listOf(-12.00001, -10000.0))
-  @Test fun wb_003() = wb("[0,1]", listOf(0.0, 0.00001, 0.99999, 1.0), listOf(-0.00001, 1.000001, 100.0, -100.0))
-  @Test fun wb_004() = wb("]0,1]", listOf(0.00001, 0.99999, 1.0), listOf(0.0, -0.00001, 1.000001, 100.0, -100.0))
-  @Test fun wb_005() = wb("]0,1[", listOf(0.00001, 0.99999), listOf(0.0, -0.00001, 1.000001, 100.0, -100.0, 1.0))
+  @Test fun erg_001() = G(x, "=", 3)      hatErgebnis  "3"
+  @Test fun erg_002() = G(x, "=", 23.3)   hatErgebnis  "23.3"
+  
+  @Test fun erg_simp_001() = "[0,1];[1,2]"            hatSimplesErgebnis  "[0,2]"
+  @Test fun erg_simp_002() = "[1,2];[0,1]"            hatSimplesErgebnis  "[0,2]"
+  @Test fun erg_simp_003()= "[0,3];[1,2]"            hatSimplesErgebnis  "[0,3]"
+  @Test fun erg_simp_004() = "[0,1[;[1,2]"            hatSimplesErgebnis  "[0,2]"
+  @Test fun erg_simp_005() = "[0,1];]1,2]"            hatSimplesErgebnis  "[0,2]"
+  @Test fun erg_simp_006() = "[0,1[;]1,2]"            hatSimplesErgebnis  "[0,1[;]1,2]"
+  @Test fun erg_simp_007() = "[0,1[;]1,2];1"          hatSimplesErgebnis  "[0,2]"
+  @Test fun erg_simp_008() = "1;0;1"                  hatSimplesErgebnis  "0;1"
+  @Test fun erg_simp_009() = "[0,2];1;2;3"            hatSimplesErgebnis  "[0,2];3"
+  @Test fun erg_simp_010() = "[0,2[;2"                hatSimplesErgebnis  "[0,2]"
+  @Test fun erg_simp_011() = "[0,2[;]2,3];2"          hatSimplesErgebnis  "[0,3]"
+  @Test fun erg_simp_012() = "[0,1.5];[2.5,4];[1,3]"  hatSimplesErgebnis  "[0,4]"
+  @Test fun erg_simp_013() = "[I,1];[0,I]"            hatSimplesErgebnis  "[I,I]"
+  @Test fun erg_simp_014() = "[I,1];[0,2]"            hatSimplesErgebnis  "[I,2]"
+  @Test fun erg_simp_015() = "[0,2];[I,1]"            hatSimplesErgebnis  "[I,2]"
+
+  @Test fun gw_001() = grenzwert("]-I,5[" , listOf(-1000.0, -1.0, 4.99999)    , listOf(5.0, 100.0)                                 )
+  @Test fun gw_002() = grenzwert("[-12,I[", listOf(-12.0, -10.0, 1000.0)      , listOf(-12.00001, -10000.0)                        )
+  @Test fun gw_003() = grenzwert("[0,1]"  , listOf(0.0, 0.00001, 0.99999, 1.0), listOf(-0.00001, 1.000001, 100.0, -100.0)          )
+  @Test fun gw_004() = grenzwert("]0,1]"  , listOf(0.00001, 0.99999, 1.0)     , listOf(0.0, -0.00001, 1.000001, 100.0, -100.0)     )
+  @Test fun gw_005() = grenzwert("]0,1["  , listOf(0.00001, 0.99999)          , listOf(0.0, -0.00001, 1.000001, 100.0, -100.0, 1.0))
+  //@formatter:on
 
   @Test fun gleichheit() = Gleichheit.values().forEach { println(" - ${it.name} ${it.look} flip:${it.flip.name}") }
 
@@ -100,7 +119,7 @@ class Tests {
   }
 
   // ******************************************************************************************************************
-  private fun wb(wbString: String, inRange: List<Double>, outRange: List<Double>) {
+  private fun grenzwert(wbString: String, inRange: List<Double>, outRange: List<Double>) {
     val wb = Grenzwert(wbString)
 
     inRange.forEach { value -> assertTrue("$value should be in Range of $wb", wb.inRange(value)) }
@@ -160,5 +179,15 @@ class Tests {
     if (DEBUG) println(simple.toGraph())
 
     assertEquals(expected, simple)
+  }
+
+  private infix fun Gleichung.hatErgebnis(ergebnisExpectedString: String) {
+    println("Gleichung '$this' soll als Ergebnis haben: " + Ergebnis("x", ergebnisExpectedString))
+    assertEquals(Ergebnis("x", ergebnisExpectedString), this.getErgebnis())
+  }
+
+  private infix fun String.hatSimplesErgebnis(ergebnisExpectedString: String) {
+    println("Ergebnis '$this' soll zusammengefasst sein: $ergebnisExpectedString")
+    assertEquals(Ergebnis("x", ergebnisExpectedString), Ergebnis("x", this))
   }
 }
