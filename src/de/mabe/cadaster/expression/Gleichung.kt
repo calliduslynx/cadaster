@@ -74,6 +74,7 @@ interface Gleichung {
   fun toGraph(): String
   val variables: Set<String>
   fun getErgebnis(): Ergebnis?
+  fun mitWertFuerVariable(ergebnis: Ergebnis): Gleichung
 }
 
 // ******************************************************************************************************************
@@ -88,6 +89,8 @@ private class GleichungsMenge(val gleichungen: List<Gleichung>) : Gleichung {
   }
 
   override fun getErgebnis() = TODO("Not implemented yed")
+
+  override fun mitWertFuerVariable(ergebnis: Ergebnis) = TODO("not implemented")
 
   override fun istKorrekt() = gleichungen.fold(KORREKT) { statusBisher, gleichung ->
     val statusNeu = gleichung.istKorrekt()
@@ -114,9 +117,21 @@ private class EineGleichung(val left: Expression, val gleichheit: Gleichheit, va
   override fun simplify() = EineGleichung(left.simplify(), gleichheit, right.simplify())
   override val variables by lazy { left.variables + right.variables }
 
-  fun withValue(varName: String, value: Int) = withValue(varName, value.toDouble())
-  fun withValue(varName: String, value: Double) = withValue(varName, Val(value))
-  fun withValue(varName: String, value: Expression) = EineGleichung(left.withValue(varName, value), gleichheit, right.withValue(varName, value))
+  override fun mitWertFuerVariable(ergebnis: Ergebnis): Gleichung {
+    if (!ergebnis.ist_konkret) throw IllegalStateException("Ergebnis ist nicht konkret")
+
+    val konkrete_Werte = ergebnis.konkrete_Werte
+    return if (konkrete_Werte.size == 1) {
+      val konkreter_Wert = konkrete_Werte[0]
+      EineGleichung(left.withValue(ergebnis.variable, konkreter_Wert), gleichheit, right.withValue(ergebnis.variable, konkreter_Wert))
+    } else {
+      GleichungsMenge(
+          konkrete_Werte.map { konkreter_Wert ->
+            EineGleichung(left.withValue(ergebnis.variable, konkreter_Wert), gleichheit, right.withValue(ergebnis.variable, konkreter_Wert))
+          }
+      )
+    }
+  }
 
   override fun istKorrekt(): GleichungKorrect {
     val leftValue = (left.simplify() as? ValueExpression)?.value

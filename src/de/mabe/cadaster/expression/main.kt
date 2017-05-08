@@ -75,10 +75,10 @@ val gleichungssysteme = listOf(
         G(12, "=", x - y)
     ),
     Gleichungssystem(
-        G(4, "=", Val(1) / (x + y))
+        G(4, "=", Wurzel(x * y))
     ),
     Gleichungssystem(
-        G(4, "=", Wurzel(x * y))
+        G(4, "=", Val(1) / (x + y))
     ),
     Gleichungssystem(
         G(x, "=", x + 14 + y),

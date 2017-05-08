@@ -1,67 +1,166 @@
 package de.mabe.cadaster.expression
 
-
+// ******************************************************************************************************************
+// ******************************************************************************************************************
+// ******************************************************************************************************************
 private fun List<Gleichung>.print() = this.mapIndexed { i, it -> "  [$i] $it" }.joinToString("\n")
 
-class GleichungssytemResult(val variables: HashSet<String>) {
-  val openVariables = variables
-  val foundVariables = HashMap<String, List<Double>>()
-  val newFoundVariables = HashMap<String, List<Double>>()
+private fun List<Gleichung>.`enthalten mindestens eine gelöste, konkrete Variable`(): Boolean =
+    this.any { it.getErgebnis()?.ist_konkret ?: false }
 
-  override fun toString() = "$foundVariables  - open: $openVariables"
+// ******************************************************************************************************************
+// ******************************************************************************************************************
+// ******************************************************************************************************************
 
-  fun checkForNewVariable(gleichungen: List<Gleichung>): Boolean {
-    gleichungen.forEach {
-      //      val loesung = it.getLoesungen()
-//      openVariables.
-    }
-    return false
+open class GleichungssytemResult(val variables: HashSet<String>) {
+  val foundVariables = HashMap<String, Pair<Boolean, List<Double>>>()
+  val openVariables: List<String> get() = variables.filter { !foundVariables.keys.contains(it) }
+  val fertig: Boolean get() = openVariables.isEmpty()
+
+  fun setzeFestenWert(variable: String, values: List<Double>) {
+    foundVariables.put(variable, Pair(true, values))
   }
+
+  override fun toString() = "Fertig:$fertig  $foundVariables  - open: $openVariables"
 }
+
+object Gleichungssystem_nicht_gelöst : GleichungssytemResult(HashSet())
+
+// ******************************************************************************************************************
+// ******************************************************************************************************************
+// ******************************************************************************************************************
 
 class Gleichungssystem(vararg gleichungen: Gleichung) {
   val gleichungen = gleichungen.toList()
   val variablen: HashSet<String> = gleichungen.fold(HashSet<String>(), { set, gleichung -> set.addAll(gleichung.variables); set })
 
-  /** nimmt die EineGleichung und versucht sie umzustellen, für alle bekannten Variablen*/
-  // @formatter:off
-  private fun erzeugeGleichungenUmgestelltNachVar(gleichung: Gleichung): List<Gleichung> = variablen.map { varName ->
-    val solveResult = gleichung.loese_auf_nach(varName)
-    when (solveResult) {
-      is ErfolgreicheUmstellung     -> solveResult.gleichung
-      is VariableNichtRelevant      -> { debug("            .. Variable '$varName' not relevant : $gleichung"); null }
-      is UmstellungNichtErfolgreich -> { println("            !! Unable to Solve for '$varName' : $gleichung"); null }
-    }
-  }.filterNotNull()
-
-
-//  /** Wenn die EineGleichung fertig gelöst ist, wird Pair(VarName, Value) zurück geliefert, sonst null */
-//  private fun EineGleichung.getLoesung() = if (this.left is VariableExpression && this.right is ValueExpression)
-//    Pair(this.left.name, this.right.value) else null
-
+  /*********************************************************************************************************************
+   *                                                                                                                   *
+   *   M A I N - M E T H O D                                                                                           *
+   *                                                                                                                   *
+   *********************************************************************************************************************/
   fun solve(
-      gleichungenParam: List<Gleichung> = this.gleichungen, 
-      result: GleichungssytemResult = GleichungssytemResult(this.variablen), 
-      depth:Int = 0
-  ):GleichungssytemResult {
-    var gleichungen = gleichungenParam
+      gleichungenParam: List<Gleichung> = this.gleichungen,
+      result: GleichungssytemResult = GleichungssytemResult(this.variablen),
+      depth: Int = 0
+  ): GleichungssytemResult {
+    fun l(a: Any, d: Int = depth): Unit = if (a.toString().lines().size > 1) a.toString().lines().forEach { l(it) } else println("| ".repeat(d) + a)
+    val gleichungen = gleichungenParam
+    val variablen: HashSet<String> = gleichungen.map { it.variables }.fold(HashSet<String>(), { set, v -> set.addAll(v);set })
 
-    println(this)
-    println("  Variablen: $variablen\n")
+    if (depth > 0) l("+-" + "-".repeat(20), depth - 1)
 
-    println("> Vereinfache Gleichungen")
-    gleichungen = gleichungen.map { it.simplify() }
-    println(gleichungen.print())
+    l(gleichungen.print())
+    l("> aktuelles Result: $result\n")
+    if (result.fertig) return `logge Resultate`(result, this.gleichungen)
 
-    println("> Umgestellte Gleichungen")
-    val umgestellteGleichungen = gleichungen.map { erzeugeGleichungenUmgestelltNachVar(it) }.flatten().toMutableList()
-    println(umgestellteGleichungen.print())
-    if(result.checkForNewVariable(gleichungen)) return result
+    l("> Vereinfache Gleichungen")
+    val vereinfachte_gleichungen = gleichungen.map { it.simplify() }
+    l(vereinfachte_gleichungen.print())
 
+    l("> Stelle Gleichungen um")
+    val (mindestens_eine_Umstellung_war_erfolgreich: Boolean, umgestellte_gleichungen: List<Gleichung>)
+        = `erzeuge Gleichungen, umgestellt für jede Variable`(gleichungen, variablen)
+    l(umgestellte_gleichungen.print())
 
-    println("> Versuche einfache Umstellung")
+    l("> Überrpüfe, ob mindestens ein Gleichung umgestellt werden konnte")
+    if (!mindestens_eine_Umstellung_war_erfolgreich) {
+      l("> ABBRUCH: Keine der Gleichungen kann umgestellt werden")
+      return Gleichungssystem_nicht_gelöst
+    }
+
+    l("> Überpüfe, ob Variable bereits gelöst wurde")
+    if (umgestellte_gleichungen.`enthalten mindestens eine gelöste, konkrete Variable`()) {
+      l("> Es wurden gelöste Variablen gefunden, diese werden eingesetzt.")
+      val eingesetzte_gleichungen = `nimm fertige Gleichungen und setze Variablen`(umgestellte_gleichungen, result)
+      return solve(eingesetzte_gleichungen, result, depth + 1)
+    }
+
+    l("> Substituiere Variablen")
+
     TODO()
   }
+
+
+  /*********************************************************************************************************************
+   * nimmt die Gleichungen und versucht sie zu jeder bekannten Variable umzustellen                                    *
+   * - wenn eine Gleichung nach allen bekannten Variablen umgestellt werden konnte, wird sie entfernt, andernfalls     *
+   *   existiert sie auch in der Return-Liste                                                                          *
+   * @return Boolean:     ob mindestens eine Gleichung erfolgreich umgestellt wurde                                    *
+   *         Gleichungen: alle weiter zu verwendenden Gleichungen                                                      *
+   *********************************************************************************************************************/
+  private fun `erzeuge Gleichungen, umgestellt für jede Variable`(gleichungen: List<Gleichung>, variablen: HashSet<String>): Pair<Boolean, List<Gleichung>> {
+    var mindestens_eine_Umstellung_war_erfolgreich = false
+
+    val list = gleichungen.map { gleichung ->
+      var gleichung_fuer_alle_Variablen_aufgeloest = true
+
+      val umgestellte_Gleichungen = variablen.map { varName ->
+        val solveResult = gleichung.loese_auf_nach(varName)
+        when (solveResult) {
+          is ErfolgreicheUmstellung -> {
+            mindestens_eine_Umstellung_war_erfolgreich = true
+            solveResult.gleichung
+          }
+          is VariableNichtRelevant -> {
+            debug("            .. Variable '$varName' not relevant : $gleichung")
+            null
+          }
+          is UmstellungNichtErfolgreich -> {
+            println("            !! Unable to Solve for '$varName' : $gleichung")
+            gleichung_fuer_alle_Variablen_aufgeloest = false
+            null
+          }
+        }
+      }.filterNotNull()
+
+      if (gleichung_fuer_alle_Variablen_aufgeloest) umgestellte_Gleichungen else umgestellte_Gleichungen + gleichung
+    }.flatten()
+
+    return Pair(mindestens_eine_Umstellung_war_erfolgreich, list)
+  }
+
+  /*********************************************************************************************************************
+   *
+   *********************************************************************************************************************/
+  private fun `nimm fertige Gleichungen und setze Variablen`(gleichungen: List<Gleichung>, result: GleichungssytemResult): List<Gleichung> {
+    val relevanteErgebnisse = gleichungen.map { it.getErgebnis() }.filterNotNull().filter { it.ist_konkret }
+    // TODO man könnte checken, dass Variablen immer gleiche Werte haben
+
+    var gleichungenTmp = gleichungen
+
+    relevanteErgebnisse.forEach { ergebnis ->
+      result.setzeFestenWert(ergebnis.variable, ergebnis.konkrete_Werte)
+
+      gleichungenTmp = gleichungenTmp
+          .map { gleichung -> gleichung.mitWertFuerVariable(ergebnis) }
+          .filter { it.variables.isNotEmpty() }
+    }
+
+    return gleichungenTmp
+  }
+
+  /*********************************************************************************************************************
+   *
+   *********************************************************************************************************************/
+  private fun `logge Resultate`(result: GleichungssytemResult, gleichungen: List<Gleichung>): GleichungssytemResult {
+    // TODO mal checken, ob alle Gleichungen mit den Variablen laufen
+    println()
+    println("======== LÖSUNG ========")
+    println("= Gleichungen:")
+    gleichungen.print().lines().forEach { println("= $it") }
+    println("= ")
+    println("= Lösungen:")
+    result.foundVariables.forEach { name, details ->
+      print("=  $name -> ")
+      print(if (details.first) "100%ig" else "u.A.")
+      println("  " + details.second)
+    }
+    println("========================")
+
+    return result
+  }
+
 //    while (true) {
 ////      val numberOfFoundVariables = result.numberOfSolvedVariables
 ////      println(umgestellteGleichungen.print())

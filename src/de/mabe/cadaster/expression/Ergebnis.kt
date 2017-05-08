@@ -7,9 +7,13 @@ private infix fun List<*>.equalsIgnoreOrder(other: List<*>): Boolean {
   return otherList.isEmpty()
 }
 
+/**
+ * ein Ergebnis ist bezieht sich immer genau auf EINE Variable
+ * Für diese gibt es dann 1-n Teilergebnisse, die entweder KonkretesErgebnis oder Grenzwert sein können
+ */
 class Ergebnis {
   val variable: String
-  val list: List<TeilErgebnis>
+  /* private */ val list: List<TeilErgebnis>
 
   constructor(variable: String, list: List<TeilErgebnis>) {
     this.variable = variable
@@ -20,6 +24,10 @@ class Ergebnis {
     this.variable = variable
     list = simplifyList(parseString(string))
   }
+
+  val ist_konkret: Boolean get() = list.all { it is KonkretesErgebnis }
+  val konkrete_Werte: List<Double> get() = list.map { (it as KonkretesErgebnis).value }
+
 
   private fun parseString(ergebnisAlsString: String): List<TeilErgebnis> =
       ergebnisAlsString.split(";").map { part ->
@@ -208,6 +216,8 @@ class Grenzwert : TeilErgebnis {
 
   override fun equals(other: Any?) = (other is Grenzwert) && other.lower == lower && other.upper == upper
 }
+
+// ******************************************************************************************************************
 
 sealed class Grenze {
   abstract val value: Double
