@@ -75,6 +75,8 @@ interface Gleichung {
   val variables: Set<String>
   fun getErgebnis(): Ergebnis?
   fun mitWertFuerVariable(ergebnis: Ergebnis): Gleichung
+  fun mitExpressionFuerVariable(gleichung: Gleichung): Gleichung
+  val linkeVariable: String?
 }
 
 // ******************************************************************************************************************
@@ -84,13 +86,11 @@ private class GleichungsMenge(val gleichungen: List<Gleichung>) : Gleichung {
 
   override fun simplify() = GleichungsMenge(gleichungen.map { it.simplify() })
 
-  override fun loese_auf_nach(varName: String): UmstellungsErgebnis {
-    TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-  }
-
+  override fun loese_auf_nach(varName: String) = TODO("Not implemented yed")
   override fun getErgebnis() = TODO("Not implemented yed")
-
-  override fun mitWertFuerVariable(ergebnis: Ergebnis) = TODO("not implemented")
+  override fun mitWertFuerVariable(ergebnis: Ergebnis) = TODO("Not implemented yed")
+  override fun mitExpressionFuerVariable(gleichung: Gleichung) = TODO("Not implemented yed")
+  override val linkeVariable by lazy { TODO("Not implemented yed") }
 
   override fun istKorrekt() = gleichungen.fold(KORREKT) { statusBisher, gleichung ->
     val statusNeu = gleichung.istKorrekt()
@@ -116,6 +116,7 @@ private class EineGleichung(val left: Expression, val gleichheit: Gleichheit, va
 
   override fun simplify() = EineGleichung(left.simplify(), gleichheit, right.simplify())
   override val variables by lazy { left.variables + right.variables }
+  override val linkeVariable by lazy { (left as? VariableExpression)?.name }
 
   override fun mitWertFuerVariable(ergebnis: Ergebnis): Gleichung {
     if (!ergebnis.ist_konkret) throw IllegalStateException("Ergebnis ist nicht konkret")
@@ -131,6 +132,17 @@ private class EineGleichung(val left: Expression, val gleichheit: Gleichheit, va
           }
       )
     }
+  }
+
+  override fun mitExpressionFuerVariable(gleichung: Gleichung): Gleichung {
+    return if (gleichung is EineGleichung) {
+      if (gleichung.gleichheit != IST_GLEICH) throw IllegalStateException("Nur IST_GLEICH supported")
+      val variable = (gleichung.left as? VariableExpression)?.name ?: throw IllegalStateException("Linke Seite ist keine Variable")
+      EineGleichung(left.withValue(variable, gleichung.right), IST_GLEICH, right.withValue(variable, gleichung.right))
+    } else {
+      throw IllegalStateException("Gleichungsmenge geht noch nicht")
+    }
+
   }
 
   override fun istKorrekt(): GleichungKorrect {
